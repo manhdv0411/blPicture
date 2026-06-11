@@ -1,0 +1,78 @@
+{
+  "ver": "2.3.14",
+  "importer": "fbx",
+  "imported": true,
+  "uuid": "33237bda-8dbd-4c2c-8f33-bde6179967e0",
+  "files": [],
+  "subMetas": {
+    "4c3e6": {
+      "importer": "gltf-mesh",
+      "uuid": "33237bda-8dbd-4c2c-8f33-bde6179967e0@4c3e6",
+      "displayName": "",
+      "id": "4c3e6",
+      "name": "Cube.152.mesh",
+      "userData": {
+        "gltfIndex": 0,
+        "triangleCount": 752
+      },
+      "ver": "1.1.1",
+      "imported": true,
+      "files": [
+        ".bin",
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "79d74": {
+      "importer": "gltf-scene",
+      "uuid": "33237bda-8dbd-4c2c-8f33-bde6179967e0@79d74",
+      "displayName": "",
+      "id": "79d74",
+      "name": "wall board 2(1).prefab",
+      "userData": {
+        "gltfIndex": 0
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    }
+  },
+  "userData": {
+    "imageMetas": [],
+    "fbx": {
+      "smartMaterialEnabled": true
+    },
+    "lods": {
+      "enable": false,
+      "hasBuiltinLOD": false,
+      "options": [
+        {
+          "screenRatio": 0.25,
+          "faceCount": 1
+        },
+        {
+          "screenRatio": 0.125,
+          "faceCount": 0.25
+        },
+        {
+          "screenRatio": 0.01,
+          "faceCount": 0.1
+        }
+      ]
+    },
+    "assetFinder": {
+      "meshes": [
+        "33237bda-8dbd-4c2c-8f33-bde6179967e0@4c3e6"
+      ],
+      "skeletons": [],
+      "textures": [],
+      "materials": [],
+      "scenes": [
+        "33237bda-8dbd-4c2c-8f33-bde6179967e0@79d74"
+      ]
+    }
+  }
+}

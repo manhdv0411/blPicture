@@ -1,0 +1,95 @@
+CCEffect %{
+  techniques:
+  - name: opaque
+    passes:
+    - vert: unlit-vs:vert
+      frag: unlit-fs:frag
+      rasterizerState:
+        cullMode: none
+      properties: &props
+        mainTexture:    { value: white }
+        mainColor:      { value: [1, 1, 1, 1], editor: { type: color } }
+        alphaThreshold: { value: 0.1 }
+        outlineWidth:   { value: 2.0 }
+        textureSize:    { value: [512, 512, 0, 0] }
+        uvRect:         { value: [0, 0, 1, 1] }
+  - name: transparent
+    passes:
+    - vert: unlit-vs:vert
+      frag: unlit-fs:frag
+      rasterizerState:
+        cullMode: none
+      blendState:
+        targets:
+        - blend: true
+          blendSrc: src_alpha
+          blendDst: one_minus_src_alpha
+          blendSrcAlpha: src_alpha
+          blendDstAlpha: one_minus_src_alpha
+      properties: *props
+}%
+
+CCProgram unlit-vs %{
+  precision highp float;
+  #include <builtin/uniforms/cc-global>
+  #include <builtin/uniforms/cc-local>
+
+  in vec3 a_position;
+  in vec2 a_texCoord;
+  out vec2 v_uv;
+
+  vec4 vert () {
+    vec4 pos = vec4(a_position, 1.0);
+    pos = cc_matProj * (cc_matView * cc_matWorld) * pos;
+    v_uv = a_texCoord;
+    return pos;
+  }
+}%
+
+CCProgram unlit-fs %{
+  precision highp float;
+  
+  uniform sampler2D mainTexture;
+  
+  uniform Constant {
+    vec4 mainColor;
+    vec4 textureSize;
+    vec4 uvRect;
+    float alphaThreshold;
+    float outlineWidth;
+  };
+
+  in vec2 v_uv;
+
+  float sampleAlphaInRect (vec2 uv) {
+    if (uv.x < uvRect.x || uv.y < uvRect.y || uv.x > uvRect.z || uv.y > uvRect.w) {
+      return 0.0;
+    }
+
+    return texture(mainTexture, uv).a;
+  }
+
+  vec4 frag () {
+    float centerAlpha = sampleAlphaInRect(v_uv);
+    if (centerAlpha >= alphaThreshold) discard;
+
+    vec2 texel = outlineWidth / max(textureSize.xy, vec2(1.0, 1.0));
+    float outlineAlpha = 0.0;
+
+    outlineAlpha = max(outlineAlpha, sampleAlphaInRect(v_uv + vec2( texel.x, 0.0)));
+    outlineAlpha = max(outlineAlpha, sampleAlphaInRect(v_uv + vec2(-texel.x, 0.0)));
+    outlineAlpha = max(outlineAlpha, sampleAlphaInRect(v_uv + vec2(0.0,  texel.y)));
+    outlineAlpha = max(outlineAlpha, sampleAlphaInRect(v_uv + vec2(0.0, -texel.y)));
+    outlineAlpha = max(outlineAlpha, sampleAlphaInRect(v_uv + vec2( texel.x,  texel.y)));
+    outlineAlpha = max(outlineAlpha, sampleAlphaInRect(v_uv + vec2(-texel.x,  texel.y)));
+    outlineAlpha = max(outlineAlpha, sampleAlphaInRect(v_uv + vec2( texel.x, -texel.y)));
+    outlineAlpha = max(outlineAlpha, sampleAlphaInRect(v_uv + vec2(-texel.x, -texel.y)));
+
+    if (outlineAlpha < alphaThreshold) discard;
+
+    vec4 col = mainColor;
+    col.a *= smoothstep(alphaThreshold, 1.0, outlineAlpha);
+    
+    return col;
+  }
+}%

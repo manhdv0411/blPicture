@@ -1,0 +1,182 @@
+{
+  "ver": "2.3.14",
+  "importer": "fbx",
+  "imported": true,
+  "uuid": "72d7d7c2-9cfd-48e5-9654-28fe47730afa",
+  "files": [],
+  "subMetas": {
+    "36368": {
+      "importer": "gltf-material",
+      "uuid": "72d7d7c2-9cfd-48e5-9654-28fe47730afa@36368",
+      "displayName": "",
+      "id": "36368",
+      "name": "Mtl_BlockColor.material",
+      "userData": {
+        "gltfIndex": 0
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "b93a4": {
+      "importer": "gltf-mesh",
+      "uuid": "72d7d7c2-9cfd-48e5-9654-28fe47730afa@b93a4",
+      "displayName": "",
+      "id": "b93a4",
+      "name": "Square2_block_mesh.mesh",
+      "userData": {
+        "gltfIndex": 0,
+        "triangleCount": 316
+      },
+      "ver": "1.1.1",
+      "imported": true,
+      "files": [
+        ".bin",
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "57e1c": {
+      "importer": "gltf-mesh",
+      "uuid": "72d7d7c2-9cfd-48e5-9654-28fe47730afa@57e1c",
+      "displayName": "",
+      "id": "57e1c",
+      "name": "Square2_tex_mesh.mesh",
+      "userData": {
+        "gltfIndex": 1,
+        "triangleCount": 58
+      },
+      "ver": "1.1.1",
+      "imported": true,
+      "files": [
+        ".bin",
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "71a58": {
+      "importer": "gltf-embeded-image",
+      "uuid": "72d7d7c2-9cfd-48e5-9654-28fe47730afa@71a58",
+      "displayName": "",
+      "id": "71a58",
+      "name": "Layer_1_1.image",
+      "userData": {
+        "gltfIndex": 0,
+        "fixAlphaTransparencyArtifacts": true,
+        "hasAlpha": true,
+        "type": "texture"
+      },
+      "ver": "1.0.3",
+      "imported": true,
+      "files": [
+        ".json",
+        ".png"
+      ],
+      "subMetas": {}
+    },
+    "caa1c": {
+      "importer": "texture",
+      "uuid": "72d7d7c2-9cfd-48e5-9654-28fe47730afa@caa1c",
+      "displayName": "",
+      "id": "caa1c",
+      "name": "Layer_1_1.texture",
+      "userData": {
+        "wrapModeS": "repeat",
+        "wrapModeT": "repeat",
+        "minfilter": "linear",
+        "magfilter": "linear",
+        "mipfilter": "none",
+        "anisotropy": 0,
+        "isUuid": true,
+        "imageUuidOrDatabaseUri": "72d7d7c2-9cfd-48e5-9654-28fe47730afa@71a58"
+      },
+      "ver": "1.0.22",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "799cc": {
+      "importer": "gltf-material",
+      "uuid": "72d7d7c2-9cfd-48e5-9654-28fe47730afa@799cc",
+      "displayName": "",
+      "id": "799cc",
+      "name": "Mtl_Tex.material",
+      "userData": {
+        "gltfIndex": 1
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "4b122": {
+      "importer": "gltf-scene",
+      "uuid": "72d7d7c2-9cfd-48e5-9654-28fe47730afa@4b122",
+      "displayName": "",
+      "id": "4b122",
+      "name": "Square2.prefab",
+      "userData": {
+        "gltfIndex": 0
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    }
+  },
+  "userData": {
+    "imageMetas": [
+      {
+        "name": "Layer_1_1",
+        "uri": "72d7d7c2-9cfd-48e5-9654-28fe47730afa@71a58"
+      }
+    ],
+    "fbx": {
+      "smartMaterialEnabled": true
+    },
+    "lods": {
+      "enable": false,
+      "hasBuiltinLOD": false,
+      "options": [
+        {
+          "screenRatio": 0.25,
+          "faceCount": 1
+        },
+        {
+          "screenRatio": 0.125,
+          "faceCount": 0.25
+        },
+        {
+          "screenRatio": 0.01,
+          "faceCount": 0.1
+        }
+      ]
+    },
+    "assetFinder": {
+      "meshes": [
+        "72d7d7c2-9cfd-48e5-9654-28fe47730afa@b93a4",
+        "72d7d7c2-9cfd-48e5-9654-28fe47730afa@57e1c"
+      ],
+      "skeletons": [],
+      "textures": [
+        "72d7d7c2-9cfd-48e5-9654-28fe47730afa@caa1c"
+      ],
+      "materials": [
+        "72d7d7c2-9cfd-48e5-9654-28fe47730afa@36368",
+        "72d7d7c2-9cfd-48e5-9654-28fe47730afa@799cc"
+      ],
+      "scenes": [
+        "72d7d7c2-9cfd-48e5-9654-28fe47730afa@4b122"
+      ]
+    }
+  }
+}

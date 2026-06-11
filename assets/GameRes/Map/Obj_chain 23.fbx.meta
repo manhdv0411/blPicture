@@ -1,0 +1,78 @@
+{
+  "ver": "2.3.14",
+  "importer": "fbx",
+  "imported": true,
+  "uuid": "ffb6ef85-c9b3-4d98-b153-ae43946a0736",
+  "files": [],
+  "subMetas": {
+    "a0709": {
+      "importer": "gltf-mesh",
+      "uuid": "ffb6ef85-c9b3-4d98-b153-ae43946a0736@a0709",
+      "displayName": "",
+      "id": "a0709",
+      "name": "Torus.045.mesh",
+      "userData": {
+        "gltfIndex": 0,
+        "triangleCount": 10368
+      },
+      "ver": "1.1.1",
+      "imported": true,
+      "files": [
+        ".bin",
+        ".json"
+      ],
+      "subMetas": {}
+    },
+    "9c62b": {
+      "importer": "gltf-scene",
+      "uuid": "ffb6ef85-c9b3-4d98-b153-ae43946a0736@9c62b",
+      "displayName": "",
+      "id": "9c62b",
+      "name": "Obj_chain 23.prefab",
+      "userData": {
+        "gltfIndex": 0
+      },
+      "ver": "1.0.14",
+      "imported": true,
+      "files": [
+        ".json"
+      ],
+      "subMetas": {}
+    }
+  },
+  "userData": {
+    "imageMetas": [],
+    "fbx": {
+      "smartMaterialEnabled": true
+    },
+    "lods": {
+      "enable": false,
+      "hasBuiltinLOD": false,
+      "options": [
+        {
+          "screenRatio": 0.25,
+          "faceCount": 1
+        },
+        {
+          "screenRatio": 0.125,
+          "faceCount": 0.25
+        },
+        {
+          "screenRatio": 0.01,
+          "faceCount": 0.1
+        }
+      ]
+    },
+    "assetFinder": {
+      "meshes": [
+        "ffb6ef85-c9b3-4d98-b153-ae43946a0736@a0709"
+      ],
+      "skeletons": [],
+      "textures": [],
+      "materials": [],
+      "scenes": [
+        "ffb6ef85-c9b3-4d98-b153-ae43946a0736@9c62b"
+      ]
+    }
+  }
+}
