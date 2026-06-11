@@ -406,9 +406,9 @@ export class BlockSpawn extends Component {
                 id: 'square_top_left',
                 colorGroup: 'green',
                 prefab: this.square1Prefab,
-                col: 0,
-                row: 6,
-                targetCol: 0, // Target assembled pos
+                col: 0, // Đưa về góc trái dưới an toàn
+                row: 0,
+                targetCol: 0,
                 targetRow: 0,
                 shape: this.rectShape(1, 1),
                 rotationY: 0,
@@ -422,9 +422,9 @@ export class BlockSpawn extends Component {
                 id: 'square_bottom_left',
                 colorGroup: 'green',
                 prefab: this.square1Prefab,
-                col: 0,
+                col: 2, // Đặt ở giữa hàng dưới cùng
                 row: 0,
-                targetCol: 1, // Target assembled pos
+                targetCol: 1,
                 targetRow: 0,
                 shape: this.rectShape(1, 1),
                 rotationY: 0,
@@ -438,9 +438,9 @@ export class BlockSpawn extends Component {
                 id: 'rec21_top_next_to_square',
                 colorGroup: 'green',
                 prefab: this.rec21Prefab,
-                col: 1,
-                row: 6,
-                targetCol: 0, // Target assembled pos
+                col: 1, // Xoay -90 sẽ chiếm ô (1,5) và (2,5) -> Rất an toàn, cách biên phải 2 ô
+                row: 5,
+                targetCol: 0,
                 targetRow: 1,
                 shape: this.rectShape(2, 1),
                 rotationY: -90,
@@ -456,9 +456,9 @@ export class BlockSpawn extends Component {
                 id: 'rec21_bottom',
                 colorGroup: 'red',
                 prefab: this.rec21Prefab,
-                col: 2,
-                row: 2,
-                targetCol: 0, // Target assembled pos
+                col: 0, // Chiếm ô (0,3) và (1,3) -> Nằm hoàn toàn bên trái
+                row: 3,
+                targetCol: 0,
                 targetRow: 2,
                 shape: this.rectShape(2, 1),
                 rotationY: -90,
@@ -472,9 +472,9 @@ export class BlockSpawn extends Component {
                 id: 'square2_bottom_right',
                 colorGroup: 'red',
                 prefab: this.square2Prefab,
-                col: 0,
-                row: 4,
-                targetCol: 0, // Target assembled pos
+                col: 2, // Khối 2x2 chiếm từ col 2->3, row 2->3 (Nằm ở trung tâm khay)
+                row: 2,
+                targetCol: 0,
                 targetRow: 0,
                 shape: this.rectShape(2, 2),
                 rotationY: 0,
@@ -490,9 +490,9 @@ export class BlockSpawn extends Component {
                 id: 'l21_flip_left',
                 colorGroup: 'purple',
                 prefab: this.l21FlipPrefab,
-                col: 1,
-                row: 0,
-                targetCol: 0, // Target assembled pos
+                col: 0, // Khối chữ L lớn đặt sát biên trái, chiếm col 0->1, row 4->6
+                row: 4,
+                targetCol: 0,
                 targetRow: 0,
                 shape: [new Vec2(0, 0), new Vec2(1, 0), new Vec2(0, 1), new Vec2(0, 2)],
                 rotationY: 180,
@@ -506,9 +506,9 @@ export class BlockSpawn extends Component {
                 id: 'rec21_top',
                 colorGroup: 'purple',
                 prefab: this.rec21Prefab,
-                col: 4,
+                col: 3, // Thanh dọc 1x2 nằm ở col 3, row 0->1 (Tránh biên col 4)
                 row: 0,
-                targetCol: 1, // Target assembled pos
+                targetCol: 1,
                 targetRow: 1,
                 shape: this.rectShape(1, 2),
                 rotationY: 0,
@@ -524,9 +524,9 @@ export class BlockSpawn extends Component {
                 id: 'square_left',
                 colorGroup: 'blue',
                 prefab: this.square1Prefab,
-                col: 0,
-                row: 3,
-                targetCol: 0, // Target assembled pos
+                col: 1, // Đặt ở col 1, row 1 (Nằm phía trong khay)
+                row: 1,
+                targetCol: 0,
                 targetRow: 0,
                 shape: this.rectShape(1, 1),
                 rotationY: 0,
@@ -540,9 +540,9 @@ export class BlockSpawn extends Component {
                 id: 'l1_top',
                 colorGroup: 'blue',
                 prefab: this.l1Prefab,
-                col: 3,
-                row: 5,
-                targetCol: 0, // Target assembled pos
+                col: 3, // Đặt khối L nhỏ tại col 2, row 4. Với độ lệch xoay 90 độ, khối này sẽ chiếm col 2->3, row 4->5 (Cách biệt hoàn toàn với biên phải ngoài cùng col 4)
+                row: 4,
+                targetCol: 0,
                 targetRow: 0,
                 shape: [new Vec2(0, 1), new Vec2(1, 1), new Vec2(1, 0)],
                 rotationY: 90,
@@ -1796,13 +1796,16 @@ export class BlockSpawn extends Component {
 
         for (const renderer of block.getComponentsInChildren(MeshRenderer)) {
             try {
-                let material = renderer.sharedMaterial;
+                let material = new Material();
 
                 if (this.baseMaterial) {
+                    // Clone the base material assigned in the editor (e.g. test.mtl)
                     material.copy(this.baseMaterial);
                 } else {
+                    // Fallback to trying to create standard material
                     material.initialize({
                         effectName: 'builtin-standard',
+                        defines: { USE_ALBEDO_MAP: false }
                     });
                 }
 
@@ -1823,11 +1826,8 @@ export class BlockSpawn extends Component {
                     255
                 );
                 this.trySetMaterialProperty(material, 'emissive', emissive);
-                console.log("Renderer:", renderer.node.name);
-                console.log("Mesh:", renderer.mesh);
-                console.log("Material passes:", material.passes);
-                console.log("BaseMaterial:", this.baseMaterial);
-                renderer.setMaterial(material, 0);
+
+                renderer.material = material;
             } catch (err) {
                 console.error(`Failed to apply standard material to ${def.id}:`, err);
 
@@ -1835,7 +1835,7 @@ export class BlockSpawn extends Component {
                 const fallback = new Material();
                 fallback.initialize({ effectName: 'builtin-unlit' });
                 this.trySetMaterialProperty(fallback, 'mainColor', group.color);
-                renderer.setMaterial(fallback, 0);
+                renderer.material = fallback;
             }
         }
     }
