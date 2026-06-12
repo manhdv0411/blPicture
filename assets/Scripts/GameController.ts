@@ -3,7 +3,7 @@ import { BlockSpawn } from './BlockSpawn';
 import { DragControl } from './DragControl';
 import { BoardPreview } from './BoardPreview';
 // import { GameData } from './GameData';
-// import { AudioManager } from './AudioManager';
+import { AudioManager } from './AudioManager';
 
 const { ccclass, property } = _decorator;
 
@@ -112,8 +112,9 @@ export class GameController extends Component {
     start() {
         this.resetTimer();
         this.resetTargetItems();
-        this.playTargetIntroEffect(() => {});
-        this.initStarBackground();
+        this.playTargetIntroEffect(() => { });
+        // this.initStarBackground();
+        AudioManager.instance.playBgm();
     }
 
     onDestroy() {
@@ -124,7 +125,7 @@ export class GameController extends Component {
     }
 
     update(deltaTime: number) {
-        this.updateStarBackground(deltaTime);
+        // this.updateStarBackground(deltaTime);
 
         if (!this.isTimerRunning) {
             return;
@@ -266,6 +267,7 @@ export class GameController extends Component {
 
         if (!this.targetItemsRootNode?.isValid) {
             this.targetItemsRootNode = this.findFirstNode([
+                'Canvas/TopUI/Top_bar',        // ← thêm path này
                 'Canvas/TopUI/TargetBar',
                 'block/Canvas/TopUI/TargetBar',
             ]);
@@ -333,7 +335,7 @@ export class GameController extends Component {
         ) {
             this.lastDisplayedSecond = displayedSecond;
             this.playTimerPulse(true);
-            // if (AudioManager.instance) AudioManager.instance.playTimerWarningCount();
+            if (AudioManager.instance) AudioManager.instance.playTick();
         } else if (displayedSecond !== this.lastDisplayedSecond) {
             this.lastDisplayedSecond = displayedSecond;
         }
@@ -353,15 +355,15 @@ export class GameController extends Component {
     }
 
     private onTimeOver() {
-        // if (AudioManager.instance) AudioManager.instance.playOutOfTime();
+        if (AudioManager.instance) AudioManager.instance.playTimeout();
         console.log('TIME OVER!');
-        
+
         // Find and trigger EndgameUIController's showLosePanel
         const canvas = find('Canvas') || find('block/Canvas');
         if (canvas) {
             let endgameUI = canvas.getComponent('EndgameUIController') as any;
             if (!endgameUI) endgameUI = canvas.getComponentInChildren('EndgameUIController') as any;
-            
+
             if (endgameUI && typeof endgameUI.showLosePanel === 'function') {
                 endgameUI.showLosePanel();
             }
@@ -369,7 +371,7 @@ export class GameController extends Component {
     }
 
     private onRestartButtonClicked() {
-        // if (AudioManager.instance) AudioManager.instance.playClickBtn();
+        if (AudioManager.instance) AudioManager.instance.playBlockDown();
 
         this.restartLevel(true, true);
     }
@@ -444,7 +446,7 @@ export class GameController extends Component {
             .start();
     }
 
-    private playTargetIntroEffect(onComplete: () => void = () => {}) {
+    private playTargetIntroEffect(onComplete: () => void = () => { }) {
         const root = this.targetItemsRootNode;
         if (!root) {
             this.dragController?.setInputLocked(false);
@@ -539,10 +541,10 @@ export class GameController extends Component {
         return scale;
     }
     private colorGroupToTargetName: { [key: string]: string } = {
-        'green': 'TargetItem_1',
-        'blue': 'TargetItem_2',
-        'red': 'TargetItem_3',
-        'purple': 'TargetItem_4'
+        'green': 'Img_panel',
+        'blue': 'Img_panel-1',
+        'red': 'Img_panel-2',
+        'purple': 'Img_panel-3'
     };
 
     public getTargetNodeForColorGroup(colorGroup: string): Node | null {
@@ -620,7 +622,7 @@ export class GameController extends Component {
                     return;
                 }
 
-                // if (AudioManager.instance) AudioManager.instance.playPictureCollect();
+                if (AudioManager.instance) AudioManager.instance.playBlockMatch();
 
                 targetNode.setParent(parent);
                 targetNode.active = false;
@@ -1021,13 +1023,13 @@ export class GameController extends Component {
         this.resolveSceneReferences();
 
         return (this.targetItemsRootNode?.children || [])
-            .filter((child) => child.isValid && child.name.startsWith('TargetItem_'))
+            .filter((child) => child.isValid && child.name.startsWith('Img_panel'))
             .sort((a, b) => this.getTargetItemIndex(a) - this.getTargetItemIndex(b));
     }
 
     private getTargetItemIndex(target: Node): number {
-        const match = target.name.match(/^TargetItem_(\d+)$/);
-        return match ? Number(match[1]) : Number.MAX_SAFE_INTEGER;
+        const match = target.name.match(/^Img_panel-?(\d*)$/);
+        if (match) return match[1] ? Number(match[1]) : 0;
     }
 
     private getTargetIntroCenter(targets: Node[]): Vec3 {
@@ -1100,132 +1102,132 @@ export class GameController extends Component {
         }
     }
 
-    private initStarBackground() {
-        const canvas = find('Canvas') || find('block/Canvas') || this.node;
-        this.uiCanvas = canvas.getComponent(Canvas);
+    // private initStarBackground() {
+    //     const canvas = find('Canvas') || find('block/Canvas') || this.node;
+    //     this.uiCanvas = canvas.getComponent(Canvas);
 
-        let bgNode = canvas.getChildByName('StarBackground');
-        if (!bgNode) {
-            bgNode = new Node('StarBackground');
-            bgNode.layer = canvas.layer;
-            bgNode.setParent(canvas);
-            // Index 0 is usually the background image, so we put stars at index 1
-            bgNode.setSiblingIndex(1);
-        }
+    //     let bgNode = canvas.getChildByName('StarBackground');
+    //     if (!bgNode) {
+    //         bgNode = new Node('StarBackground');
+    //         bgNode.layer = canvas.layer;
+    //         bgNode.setParent(canvas);
+    //         // Index 0 is usually the background image, so we put stars at index 1
+    //         bgNode.setSiblingIndex(1);
+    //     }
 
-        let uiTransform = bgNode.getComponent(UITransform);
-        if (!uiTransform) {
-            uiTransform = bgNode.addComponent(UITransform);
-        }
-        const winSize = view.getVisibleSize();
-        uiTransform.setContentSize(winSize.width, winSize.height);
-        this.starBackgroundTransform = uiTransform;
+    //     let uiTransform = bgNode.getComponent(UITransform);
+    //     if (!uiTransform) {
+    //         uiTransform = bgNode.addComponent(UITransform);
+    //     }
+    //     const winSize = view.getVisibleSize();
+    //     uiTransform.setContentSize(winSize.width, winSize.height);
+    //     this.starBackgroundTransform = uiTransform;
 
-        let graphics = bgNode.getComponent(Graphics);
-        if (!graphics) {
-            graphics = bgNode.addComponent(Graphics);
-        }
+    //     let graphics = bgNode.getComponent(Graphics);
+    //     if (!graphics) {
+    //         graphics = bgNode.addComponent(Graphics);
+    //     }
 
-        this.starGraphics = graphics;
-        this.stars = [];
+    //     this.starGraphics = graphics;
+    //     this.stars = [];
 
-        // Thật nhiều sao: 150 ngôi sao
-        const numStars = 150;
-        for (let i = 0; i < numStars; i++) {
-            this.stars.push({
-                x: (Math.random() - 0.5) * winSize.width,
-                y: (Math.random() - 0.5) * winSize.height,
-                radius: Math.random() * 1.7 + 1.0, // Kích thước từ 1.0 đến 2.7
-                alpha: Math.random() * 255,
-                speedX: (Math.random() - 0.5) * 15 - 5, // Trôi nhẹ sang trái/phải
-                speedY: (Math.random() - 0.5) * 15 + 10, // Trôi nhẹ lên trên
-                blinkSpeed: Math.random() * 3 + 1, // Tốc độ nhấp nháy
-                blinkPhase: Math.random() * Math.PI * 2
-            });
-        }
-    }
+    //     // Thật nhiều sao: 150 ngôi sao
+    //     const numStars = 150;
+    //     for (let i = 0; i < numStars; i++) {
+    //         this.stars.push({
+    //             x: (Math.random() - 0.5) * winSize.width,
+    //             y: (Math.random() - 0.5) * winSize.height,
+    //             radius: Math.random() * 1.7 + 1.0, // Kích thước từ 1.0 đến 2.7
+    //             alpha: Math.random() * 255,
+    //             speedX: (Math.random() - 0.5) * 15 - 5, // Trôi nhẹ sang trái/phải
+    //             speedY: (Math.random() - 0.5) * 15 + 10, // Trôi nhẹ lên trên
+    //             blinkSpeed: Math.random() * 3 + 1, // Tốc độ nhấp nháy
+    //             blinkPhase: Math.random() * Math.PI * 2
+    //         });
+    //     }
+    // }
 
-    private updateStarBackground(deltaTime: number) {
-        if (!this.starGraphics) return;
+    // private updateStarBackground(deltaTime: number) {
+    //     if (!this.starGraphics) return;
 
-        const graphics = this.starGraphics;
-        graphics.clear();
+    //     const graphics = this.starGraphics;
+    //     graphics.clear();
 
-        const winSize = view.getVisibleSize();
-        const halfW = winSize.width / 2;
-        const halfH = winSize.height / 2;
-        const blockedPolygon = this.getBoardStarBlockedPolygon();
+    //     const winSize = view.getVisibleSize();
+    //     const halfW = winSize.width / 2;
+    //     const halfH = winSize.height / 2;
+    //     const blockedPolygon = this.getBoardStarBlockedPolygon();
 
-        for (const star of this.stars) {
-            star.x += star.speedX * deltaTime;
-            star.y += star.speedY * deltaTime;
-            star.blinkPhase += star.blinkSpeed * deltaTime;
+    //     for (const star of this.stars) {
+    //         star.x += star.speedX * deltaTime;
+    //         star.y += star.speedY * deltaTime;
+    //         star.blinkPhase += star.blinkSpeed * deltaTime;
 
-            // Quấn vòng quanh màn hình (Wrap around)
-            if (star.x < -halfW) star.x = halfW;
-            else if (star.x > halfW) star.x = -halfW;
+    //         // Quấn vòng quanh màn hình (Wrap around)
+    //         if (star.x < -halfW) star.x = halfW;
+    //         else if (star.x > halfW) star.x = -halfW;
 
-            if (star.y < -halfH) star.y = halfH;
-            else if (star.y > halfH) star.y = -halfH;
+    //         if (star.y < -halfH) star.y = halfH;
+    //         else if (star.y > halfH) star.y = -halfH;
 
-            if (blockedPolygon && this.isPointInsidePolygon(star.x, star.y, blockedPolygon)) {
-                continue;
-            }
+    //         if (blockedPolygon && this.isPointInsidePolygon(star.x, star.y, blockedPolygon)) {
+    //             continue;
+    //         }
 
-            // Tính toán độ mờ bằng sóng sine
-            const alpha = 127 + Math.sin(star.blinkPhase) * 127;
+    //         // Tính toán độ mờ bằng sóng sine
+    //         const alpha = 127 + Math.sin(star.blinkPhase) * 127;
 
-            // Ánh sáng lấp lánh có màu hơi vàng/trắng
-            graphics.fillColor = new Color(255, 255, 230, Math.floor(alpha));
-            graphics.circle(star.x, star.y, star.radius);
-            graphics.fill();
-        }
-    }
+    //         // Ánh sáng lấp lánh có màu hơi vàng/trắng
+    //         graphics.fillColor = new Color(255, 255, 230, Math.floor(alpha));
+    //         graphics.circle(star.x, star.y, star.radius);
+    //         graphics.fill();
+    //     }
+    // }
 
-    private getBoardStarBlockedPolygon(): Array<{ x: number, y: number }> | null {
-        const boardPreview = this.getBoardPreview();
-        const mainCamera = boardPreview?.camera;
-        const uiCamera = this.getUiCamera();
-        const starTransform = this.starBackgroundTransform || this.starGraphics?.node.getComponent(UITransform) || null;
-        if (!boardPreview || !mainCamera || !uiCamera || !starTransform) {
-            return null;
-        }
+    // private getBoardStarBlockedPolygon(): Array<{ x: number, y: number }> | null {
+    //     const boardPreview = this.getBoardPreview();
+    //     const mainCamera = boardPreview?.camera;
+    //     const uiCamera = this.getUiCamera();
+    //     const starTransform = this.starBackgroundTransform || this.starGraphics?.node.getComponent(UITransform) || null;
+    //     if (!boardPreview || !mainCamera || !uiCamera || !starTransform) {
+    //         return null;
+    //     }
 
-        const layout = boardPreview.getBoardLayout();
-        const paddingWorld = Math.max(layout.cellStep * 0.35, 0.2);
-        const boardY = Math.max(boardPreview.cellY, boardPreview.cellThickness);
-        const localCorners = [
-            new Vec3(layout.centerX - layout.boardWidth * 0.5 - paddingWorld, boardY, layout.centerZ - layout.boardHeight * 0.5 - paddingWorld),
-            new Vec3(layout.centerX + layout.boardWidth * 0.5 + paddingWorld, boardY, layout.centerZ - layout.boardHeight * 0.5 - paddingWorld),
-            new Vec3(layout.centerX + layout.boardWidth * 0.5 + paddingWorld, boardY, layout.centerZ + layout.boardHeight * 0.5 + paddingWorld),
-            new Vec3(layout.centerX - layout.boardWidth * 0.5 - paddingWorld, boardY, layout.centerZ + layout.boardHeight * 0.5 + paddingWorld),
-        ];
-        const worldMatrix = new Mat4();
-        boardPreview.node.getWorldMatrix(worldMatrix);
+    //     const layout = boardPreview.getBoardLayout();
+    //     const paddingWorld = Math.max(layout.cellStep * 0.35, 0.2);
+    //     const boardY = Math.max(boardPreview.cellY, boardPreview.cellThickness);
+    //     const localCorners = [
+    //         new Vec3(layout.centerX - layout.boardWidth * 0.5 - paddingWorld, boardY, layout.centerZ - layout.boardHeight * 0.5 - paddingWorld),
+    //         new Vec3(layout.centerX + layout.boardWidth * 0.5 + paddingWorld, boardY, layout.centerZ - layout.boardHeight * 0.5 - paddingWorld),
+    //         new Vec3(layout.centerX + layout.boardWidth * 0.5 + paddingWorld, boardY, layout.centerZ + layout.boardHeight * 0.5 + paddingWorld),
+    //         new Vec3(layout.centerX - layout.boardWidth * 0.5 - paddingWorld, boardY, layout.centerZ + layout.boardHeight * 0.5 + paddingWorld),
+    //     ];
+    //     const worldMatrix = new Mat4();
+    //     boardPreview.node.getWorldMatrix(worldMatrix);
 
-        const polygon: Array<{ x: number, y: number }> = [];
-        const world = new Vec3();
-        const screen = new Vec3();
-        const uiWorld = new Vec3();
-        const local = new Vec3();
-        const starScreen = new Vec3();
-        uiCamera.worldToScreen(starTransform.node.worldPosition, starScreen);
+    //     const polygon: Array<{ x: number, y: number }> = [];
+    //     const world = new Vec3();
+    //     const screen = new Vec3();
+    //     const uiWorld = new Vec3();
+    //     const local = new Vec3();
+    //     const starScreen = new Vec3();
+    //     uiCamera.worldToScreen(starTransform.node.worldPosition, starScreen);
 
-        for (const corner of localCorners) {
-            Vec3.transformMat4(world, corner, worldMatrix);
-            mainCamera.worldToScreen(world, screen);
-            screen.z = starScreen.z;
-            uiCamera.screenToWorld(screen, uiWorld);
-            starTransform.convertToNodeSpaceAR(uiWorld, local);
-            polygon.push({ x: local.x, y: local.y });
-        }
+    //     for (const corner of localCorners) {
+    //         Vec3.transformMat4(world, corner, worldMatrix);
+    //         mainCamera.worldToScreen(world, screen);
+    //         screen.z = starScreen.z;
+    //         uiCamera.screenToWorld(screen, uiWorld);
+    //         starTransform.convertToNodeSpaceAR(uiWorld, local);
+    //         polygon.push({ x: local.x, y: local.y });
+    //     }
 
-        if (polygon.length !== 4 || polygon.some((point) => !Number.isFinite(point.x) || !Number.isFinite(point.y))) {
-            return null;
-        }
+    //     if (polygon.length !== 4 || polygon.some((point) => !Number.isFinite(point.x) || !Number.isFinite(point.y))) {
+    //         return null;
+    //     }
 
-        return this.expandPolygonFromCenter(polygon, this.boardStarPadding);
-    }
+    //     return this.expandPolygonFromCenter(polygon, this.boardStarPadding);
+    // }
 
     private getBoardPreview(): BoardPreview | null {
         if (this.boardPreview?.isValid) {
@@ -1251,33 +1253,33 @@ export class GameController extends Component {
         return this.uiCanvas?.cameraComponent || null;
     }
 
-    private expandPolygonFromCenter(points: Array<{ x: number, y: number }>, padding: number): Array<{ x: number, y: number }> {
-        const center = points.reduce(
-            (acc, point) => ({ x: acc.x + point.x / points.length, y: acc.y + point.y / points.length }),
-            { x: 0, y: 0 },
-        );
+    // private expandPolygonFromCenter(points: Array<{ x: number, y: number }>, padding: number): Array<{ x: number, y: number }> {
+    //     const center = points.reduce(
+    //         (acc, point) => ({ x: acc.x + point.x / points.length, y: acc.y + point.y / points.length }),
+    //         { x: 0, y: 0 },
+    //     );
 
-        return points.map((point) => {
-            const dx = point.x - center.x;
-            const dy = point.y - center.y;
-            const length = Math.max(0.001, Math.hypot(dx, dy));
-            return {
-                x: point.x + dx / length * padding,
-                y: point.y + dy / length * padding,
-            };
-        });
-    }
+    //     return points.map((point) => {
+    //         const dx = point.x - center.x;
+    //         const dy = point.y - center.y;
+    //         const length = Math.max(0.001, Math.hypot(dx, dy));
+    //         return {
+    //             x: point.x + dx / length * padding,
+    //             y: point.y + dy / length * padding,
+    //         };
+    //     });
+    // }
 
-    private isPointInsidePolygon(x: number, y: number, points: Array<{ x: number, y: number }>): boolean {
-        let inside = false;
-        for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
-            const a = points[i];
-            const b = points[j];
-            const crossesY = a.y > y !== b.y > y;
-            if (crossesY && x < ((b.x - a.x) * (y - a.y)) / (b.y - a.y) + a.x) {
-                inside = !inside;
-            }
-        }
-        return inside;
-    }
+    // private isPointInsidePolygon(x: number, y: number, points: Array<{ x: number, y: number }>): boolean {
+    //     let inside = false;
+    //     for (let i = 0, j = points.length - 1; i < points.length; j = i++) {
+    //         const a = points[i];
+    //         const b = points[j];
+    //         const crossesY = a.y > y !== b.y > y;
+    //         if (crossesY && x < ((b.x - a.x) * (y - a.y)) / (b.y - a.y) + a.x) {
+    //             inside = !inside;
+    //         }
+    //     }
+    //     return inside;
+    // }
 }

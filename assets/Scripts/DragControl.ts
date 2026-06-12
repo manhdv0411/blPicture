@@ -34,8 +34,7 @@ import { BoardPreview } from './BoardPreview';
 import { BlockSpawn } from './BlockSpawn';
 import { DraggableBlock } from './DraggableBlock';
 import { GameController } from './GameController';
-// import { DraggableBlock } from './DraggableBlock';
-// import { AudioManager } from './AudioManager';
+import { AudioManager } from './AudioManager';
 
 const { ccclass, property } = _decorator;
 
@@ -490,7 +489,7 @@ export class DragControl extends Component {
 
         this.startTimerForFirstDrag();
 
-        // if (AudioManager.instance) AudioManager.instance.playBlockUp();
+        if (AudioManager.instance) AudioManager.instance.playBlockUp();
 
         this.draggingBlock = block;
         this.draggingNode = block.node;
@@ -583,7 +582,7 @@ export class DragControl extends Component {
         const baseScale = this.draggingBaseScale || draggingNode.scale.clone();
         const targetPos = this.gridToWorldForBlock(draggingBlock, finalCol, finalRow);
 
-        // if (AudioManager.instance) AudioManager.instance.playBlockDown();
+        if (AudioManager.instance) AudioManager.instance.playBlockDown();
 
         Tween.stopAllByTarget(draggingNode);
         this.desiredDragPosition = null;
@@ -635,7 +634,7 @@ export class DragControl extends Component {
         }
 
         const hudNode = find('Canvas') || find('block/Canvas');
-        const hud = hudNode?.getComponent('GameHUDController') as { startTimer?: () => void } | null;
+        const hud = hudNode?.getComponent('GameController') as { startTimer?: () => void } | null;
         if (!hud?.startTimer) {
             return;
         }
@@ -1162,7 +1161,7 @@ export class DragControl extends Component {
 
         try {
             outlineMaterial.setProperty('mainColor', this.holdHighlightColor);
-            outlineMaterial.setProperty('albedo', this.holdHighlightColor);
+            // outlineMaterial.setProperty('albedo', this.holdHighlightColor);
         } catch {
             // Builtin materials may expose either mainColor or albedo depending on the active effect.
         }
@@ -1328,7 +1327,7 @@ export class DragControl extends Component {
 
         const generation = this.effectGeneration;
 
-        // if (AudioManager.instance) AudioManager.instance.playBlockMatch();
+        if (AudioManager.instance) AudioManager.instance.playBlockMatch();
 
         const spawner = this.node.getComponent(BlockSpawn);
         const fragmentColor = spawner ? spawner.getColorForGroup(colorGroup) : new Color(255, 255, 255, 255);
@@ -1341,7 +1340,7 @@ export class DragControl extends Component {
         const fragmentMaterial = new Material();
         fragmentMaterial.initialize({ effectName: 'builtin-standard' });
         try {
-            fragmentMaterial.setProperty('albedo', fragmentColor);
+            // fragmentMaterial.setProperty('albedo', fragmentColor);
             fragmentMaterial.setProperty('mainColor', fragmentColor);
             fragmentMaterial.setProperty('roughness', 0.35);
             fragmentMaterial.setProperty('metallic', 0);
