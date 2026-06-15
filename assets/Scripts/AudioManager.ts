@@ -54,6 +54,9 @@ export class AudioManager extends Component {
     @property(AudioClip)
     clipBgm: AudioClip | null = null;              // nhạc nền
 
+    @property(AudioClip)
+    clipGroupCollected: AudioClip | null = null;    // ghép xong cả group, bay lên TopUI
+
     // ── Cài đặt âm lượng ───────────────────────────────────
     @property({ range: [0, 1], slide: true })
     sfxVolume: number = 1.0;
@@ -108,7 +111,7 @@ export class AudioManager extends Component {
 
     /** Nhấc block lên */
     playBlockUp() {
-         console.log('playBlockUp called, clip:', this.clipBlockPickup, 'muted:', this._sfxMuted);
+        console.log('playBlockUp called, clip:', this.clipBlockPickup, 'muted:', this._sfxMuted);
         this.playSfx(this.clipBlockPickup);
     }
 
@@ -127,7 +130,10 @@ export class AudioManager extends Component {
         this.stopBgm();
         this.playSfx(this.clipWin);
     }
-
+    /** Ghép xong cả nhóm, item bay lên TopUI */
+    playGroupCollected() {
+        this.playSfx(this.clipGroupCollected);
+    }
     /** Hết giờ */
     playTimeout() {
         this.stopBgm();
@@ -213,9 +219,9 @@ export class AudioManager extends Component {
     // ── Internal ────────────────────────────────────────────
 
     private playSfx(clip: AudioClip | null, volumeScale: number = 1) {
-    console.log('playSfx:', clip, 'source:', this.sfxSource, 'muted:', this._sfxMuted);
-    if (!clip || !this.sfxSource || this._sfxMuted) return;
-    this.sfxSource.volume = this.sfxVolume * volumeScale;
-    this.sfxSource.playOneShot(clip, this.sfxVolume * volumeScale);
-}
+        console.log('playSfx:', clip, 'source:', this.sfxSource, 'muted:', this._sfxMuted);
+        if (!clip || !this.sfxSource || this._sfxMuted) return;
+        this.sfxSource.volume = this.sfxVolume * volumeScale;
+        this.sfxSource.playOneShot(clip, this.sfxVolume * volumeScale);
+    }
 }

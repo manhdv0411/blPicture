@@ -676,7 +676,7 @@ export class DragControl extends Component {
 
     private canPickBlockAtWorld(block: DraggableBlock, world: Vec3): boolean {
         const blockSize = this.getBlockSize(block);
-        const blockCenter = this.gridToWorldForBlock(block, block.col, block.row);
+        const blockCenter = block.node.worldPosition.clone();
         const localCol = (world.x - blockCenter.x) / this.cellStepX + (blockSize.cols - 1) * 0.5;
         const localRow = (world.z - blockCenter.z) / this.cellStepZ + (blockSize.rows - 1) * 0.5;
         const pickPadding = Math.max(0, this.pickHitPaddingCells);

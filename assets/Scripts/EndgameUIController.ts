@@ -18,7 +18,7 @@ export class EndgameUIController extends Component {
     timeOutPanel: Node | null = null;
 
     @property(Node)
-    wellDone: Node | null = null;
+    wellDoneNode: Node | null = null;
 
     @property(Node)
     btnReplayWin: Node | null = null;
@@ -50,6 +50,10 @@ export class EndgameUIController extends Component {
     private hasAnimatedWellDone: boolean = false;
 
     start() {
+        if (this.wellDoneNode) {
+            const op = this.wellDoneNode.getComponent(UIOpacity) || this.wellDoneNode.addComponent(UIOpacity);
+            op.opacity = 0;
+        }
         if (this.winPanel) this.winPanel.active = false;
         if (this.timeOutPanel) this.timeOutPanel.active = false;
         this.bindButtons();
@@ -66,6 +70,9 @@ export class EndgameUIController extends Component {
     // ====================================================
     public showWinPanel() {
         if (!this.winPanel) return;
+        if (AudioManager.instance) AudioManager.instance.playWin();
+        this.hasAnimatedWellDone = false;
+
         this.hasAnimatedWellDone = false;
         if (this.btnReplayWin) this.btnReplayWin.active = false;
 
@@ -115,38 +122,38 @@ export class EndgameUIController extends Component {
     // ====================================================
     // WELLDONE SPINE
     // ====================================================
-   private animateWellDone() {
-    if (!this.wellDone || this.hasAnimatedWellDone) return;
-    this.hasAnimatedWellDone = true;
+    private animateWellDone() {
+        if (!this.wellDoneNode || this.hasAnimatedWellDone) return;
+        this.hasAnimatedWellDone = true;
 
-    const op = this.wellDone.getComponent(UIOpacity) ?? this.wellDone.addComponent(UIOpacity);
-    op.opacity = 0;
+        const wellDoneOpacity = this.wellDoneNode.getComponent(UIOpacity) || this.wellDoneNode.addComponent(UIOpacity);
+        wellDoneOpacity.opacity = 0;
 
-    const spine = this.wellDone.getComponent('sp.Skeleton') as any;
-    if (spine) {
-        try {
-            spine.clearTracks();
-            spine.setAnimation(0, 'appear', false);
-            spine.addAnimation(0, 'appear', true, 1.5);
-        } catch (e) {
-            console.warn('[EndgameUIController] Spine error:', e);
+        const spine = this.wellDoneNode.getComponent('sp.Skeleton') as any;
+        if (spine) {
+            try {
+                spine.clearTracks();
+                spine.setAnimation(0, 'appear', false);
+                spine.addAnimation(0, 'loop', true, 1.5);
+            } catch (e) {
+                console.warn('[WinScreen] Lỗi animation Spine WellDone:', e);
+            }
         }
+
+        this.scheduleOnce(() => {
+            wellDoneOpacity.opacity = 255;
+        }, 0.15);
+
+        // ✅ Hiện nút sau khi appear xong
+        this.scheduleOnce(() => {
+            if (this.btnReplayWin) {
+                this.btnReplayWin.active = true;
+                const op = this.btnReplayWin.getComponent(UIOpacity) || this.btnReplayWin.addComponent(UIOpacity);
+                op.opacity = 0;
+                tween(op).to(0.3, { opacity: 255 }).start();
+            }
+        }, 1.5);
     }
-
-    this.scheduleOnce(() => { op.opacity = 255; }, 0.15);
-
-    // Hiện nút replay sau khi animation appear xong
-    this.scheduleOnce(() => {
-        if (this.btnReplayWin) {
-            this.btnReplayWin.active = true;
-            const btnOp = this.btnReplayWin.getComponent(UIOpacity)
-                ?? this.btnReplayWin.addComponent(UIOpacity);
-            btnOp.opacity = 0;
-            tween(btnOp).to(0.3, { opacity: 255 }).start();
-        }
-    }, 1.5);
-}
-
     // ====================================================
     // PHÁO HOA
     // ====================================================
@@ -241,10 +248,10 @@ export class EndgameUIController extends Component {
         this.stopFireworks();
         this.hasAnimatedWellDone = false;
 
-        if (this.wellDone) {
-            const spine = this.wellDone.getComponent('sp.Skeleton') as any;
+        if (this.wellDoneNode) {
+            const spine = this.wellDoneNode.getComponent('sp.Skeleton') as any;
             if (spine) { try { spine.clearTracks(); } catch { } }
-            const op = this.wellDone.getComponent(UIOpacity);
+            const op = this.wellDoneNode.getComponent(UIOpacity);
             if (op) op.opacity = 0;
         }
 

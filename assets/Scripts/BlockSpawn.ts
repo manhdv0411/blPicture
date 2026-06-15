@@ -349,6 +349,50 @@ export class BlockSpawn extends Component {
     @property
     l21FlipVisualOffsetZ: number = 0;
 
+
+    @property(Prefab)
+    cShapePrefab: Prefab | null = null;
+
+    @property(Texture2D)
+    orangeTexture: Texture2D | null = null;
+
+    @property(Color)
+    orangeColor: Color = new Color(255, 152, 0, 255);
+
+    @property(Color)
+    orangeBorderColor: Color = new Color(255, 255, 255, 255);
+    @property
+    cShapeWorldWidthAtScale1: number = 1.7;
+
+    @property
+    cShapeWorldHeightAtScale1: number = 1.7;
+
+    @property
+    cShapeScaleMultiplier: number = 1;
+
+    @property
+    cShapeVisualOffsetX: number = 0;
+
+    @property
+    cShapeVisualOffsetZ: number = 0;
+
+    @property
+    orangeImageCornerRadiusRatio: number = 0.18;
+
+    @property
+    orangeImageScaleMultiplier: number = 1;
+
+    @property
+    orangeCShapeImageOffsetX: number = 0;
+
+    @property
+    orangeCShapeImageOffsetZ: number = 0;
+
+    @property
+    orangeFillerImageOffsetX: number = 0;
+
+    @property
+    orangeFillerImageOffsetZ: number = 0;
     private boardPreview: BoardPreview | null = null;
     private colorGroupBounds: Map<string, ColorGroupBounds> = new Map();
 
@@ -375,7 +419,7 @@ export class BlockSpawn extends Component {
         }
         this.blocksRoot.removeAllChildren();
 
-        const layout = this.getLevel17LikeLayout();
+        const layout = this.getLevelLayout();
         this.colorGroupBounds = this.buildColorGroupBounds(layout);
 
         for (const def of layout) {
@@ -399,17 +443,15 @@ export class BlockSpawn extends Component {
         }
     }
 
-    private getLevel17LikeLayout(): BlockDef[] {
+    private getLevelLayout(): BlockDef[] {
         const levelLayout: BlockDef[] = [
-            // GREEN GROUP (Forms a 2x2 square)
+            // GREEN GROUP
             {
                 id: 'square_top_left',
                 colorGroup: 'green',
                 prefab: this.square1Prefab,
-                col: 0, // Đưa về góc trái dưới an toàn
-                row: 0,
-                targetCol: 0,
-                targetRow: 0,
+                col: 2, row: 4,
+                targetCol: 0, targetRow: 0,
                 shape: this.rectShape(1, 1),
                 rotationY: 0,
                 worldWidthAtScale1: this.square1WorldWidthAtScale1,
@@ -422,10 +464,8 @@ export class BlockSpawn extends Component {
                 id: 'square_bottom_left',
                 colorGroup: 'green',
                 prefab: this.square1Prefab,
-                col: 2, // Đặt ở giữa hàng dưới cùng
-                row: 0,
-                targetCol: 1,
-                targetRow: 0,
+                col: 4, row: 3,
+                targetCol: 3, targetRow: 0,
                 shape: this.rectShape(1, 1),
                 rotationY: 0,
                 worldWidthAtScale1: this.square1WorldWidthAtScale1,
@@ -438,10 +478,8 @@ export class BlockSpawn extends Component {
                 id: 'rec21_top_next_to_square',
                 colorGroup: 'green',
                 prefab: this.rec21Prefab,
-                col: 1, // Xoay -90 sẽ chiếm ô (1,5) và (2,5) -> Rất an toàn, cách biên phải 2 ô
-                row: 5,
-                targetCol: 0,
-                targetRow: 1,
+                col: 0, row: 1,           // ngang col 0–1, row 2
+                targetCol: 1, targetRow: 0,
                 shape: this.rectShape(2, 1),
                 rotationY: -90,
                 worldWidthAtScale1: this.rec21WorldWidthAtScale1,
@@ -451,15 +489,13 @@ export class BlockSpawn extends Component {
                 visualOffsetZ: this.rec21VisualOffsetZ,
             },
 
-            // RED GROUP (Forms a 2x3 rectangle)
+            // RED GROUP
             {
                 id: 'rec21_bottom',
                 colorGroup: 'red',
                 prefab: this.rec21Prefab,
-                col: 0, // Chiếm ô (0,3) và (1,3) -> Nằm hoàn toàn bên trái
-                row: 3,
-                targetCol: 0,
-                targetRow: 2,
+                col: 2, row: 0,           // ngang col 3–4, row 0
+                targetCol: 0, targetRow: 2,
                 shape: this.rectShape(2, 1),
                 rotationY: -90,
                 worldWidthAtScale1: this.rec21WorldWidthAtScale1,
@@ -472,10 +508,8 @@ export class BlockSpawn extends Component {
                 id: 'square2_bottom_right',
                 colorGroup: 'red',
                 prefab: this.square2Prefab,
-                col: 2, // Khối 2x2 chiếm từ col 2->3, row 2->3 (Nằm ở trung tâm khay)
-                row: 2,
-                targetCol: 0,
-                targetRow: 0,
+                col: 1, row: 2,           // 2×2 col 0–1, row 3–4
+                targetCol: 0, targetRow: 0,
                 shape: this.rectShape(2, 2),
                 rotationY: 0,
                 worldWidthAtScale1: this.square2WorldWidthAtScale1,
@@ -485,15 +519,13 @@ export class BlockSpawn extends Component {
                 visualOffsetZ: this.redSquare2VisualOffsetZ,
             },
 
-            // PURPLE GROUP (Forms a 2x3 rectangle)
+            // PURPLE GROUP
             {
                 id: 'l21_flip_left',
                 colorGroup: 'purple',
                 prefab: this.l21FlipPrefab,
-                col: 0, // Khối chữ L lớn đặt sát biên trái, chiếm col 0->1, row 4->6
-                row: 4,
-                targetCol: 0,
-                targetRow: 0,
+                col: 3, row: 1,           // L chiếm (1,2)(2,2)(1,3)(1,4)
+                targetCol: 0, targetRow: 0,
                 shape: [new Vec2(0, 0), new Vec2(1, 0), new Vec2(0, 1), new Vec2(0, 2)],
                 rotationY: 180,
                 worldWidthAtScale1: this.l21FlipWorldWidthAtScale1,
@@ -506,10 +538,8 @@ export class BlockSpawn extends Component {
                 id: 'rec21_top',
                 colorGroup: 'purple',
                 prefab: this.rec21Prefab,
-                col: 3, // Thanh dọc 1x2 nằm ở col 3, row 0->1 (Tránh biên col 4)
-                row: 0,
-                targetCol: 1,
-                targetRow: 1,
+                col: 4, row: 4,
+                targetCol: 1, targetRow: 1,
                 shape: this.rectShape(1, 2),
                 rotationY: 0,
                 worldWidthAtScale1: this.rec21WorldWidthAtScale1,
@@ -519,15 +549,13 @@ export class BlockSpawn extends Component {
                 visualOffsetZ: this.rec21VisualOffsetZ,
             },
 
-            // BLUE GROUP (Forms a 2x2 square)
+            // BLUE GROUP
             {
                 id: 'square_left',
                 colorGroup: 'blue',
                 prefab: this.square1Prefab,
-                col: 1, // Đặt ở col 1, row 1 (Nằm phía trong khay)
-                row: 1,
-                targetCol: 0,
-                targetRow: 0,
+                col: 2, row: 1,           // góc trên-trái
+                targetCol: 1, targetRow: 0,
                 shape: this.rectShape(1, 1),
                 rotationY: 0,
                 worldWidthAtScale1: this.square1WorldWidthAtScale1,
@@ -540,17 +568,55 @@ export class BlockSpawn extends Component {
                 id: 'l1_top',
                 colorGroup: 'blue',
                 prefab: this.l1Prefab,
-                col: 3, // Đặt khối L nhỏ tại col 2, row 4. Với độ lệch xoay 90 độ, khối này sẽ chiếm col 2->3, row 4->5 (Cách biệt hoàn toàn với biên phải ngoài cùng col 4)
-                row: 4,
-                targetCol: 0,
-                targetRow: 0,
-                shape: [new Vec2(0, 1), new Vec2(1, 1), new Vec2(1, 0)],
-                rotationY: 90,
+                col: 0, row: 4,           // L chiếm (3,4)(4,4)(4,5)
+                targetCol: 0, targetRow: 0,
+                shape: [new Vec2(0, 0), new Vec2(0, 1), new Vec2(1, 1)],
+                rotationY: 0,
                 worldWidthAtScale1: this.l1WorldWidthAtScale1,
                 worldHeightAtScale1: this.l1WorldHeightAtScale1,
                 scaleMultiplier: this.l1ScaleMultiplier,
                 visualOffsetX: this.l1VisualOffsetX,
                 visualOffsetZ: this.l1VisualOffsetZ,
+            },
+            {
+                id: 'c_shape_main',
+                colorGroup: 'orange',
+                prefab: this.cShapePrefab,
+                col: 2,
+                row: 5,
+                targetCol: 0,
+                targetRow: 0,
+                shape: [
+                    new Vec2(0, 0),
+                    new Vec2(1, 0),
+
+                    new Vec2(0, 1),
+
+                    new Vec2(0, 2),
+                    new Vec2(1, 2),
+                ],
+                rotationY: 0,
+                worldWidthAtScale1: this.cShapeWorldWidthAtScale1,
+                worldHeightAtScale1: this.cShapeWorldHeightAtScale1,
+                scaleMultiplier: this.cShapeScaleMultiplier,
+                visualOffsetX: this.cShapeVisualOffsetX,
+                visualOffsetZ: this.cShapeVisualOffsetZ,
+            },
+            {
+                id: 'c_shape_filler',
+                colorGroup: 'orange',
+                prefab: this.square1Prefab,
+                col: 4,
+                row: 6,
+                targetCol: 1,
+                targetRow: 1,
+                shape: this.rectShape(1, 1),
+                rotationY: 0,
+                worldWidthAtScale1: this.square1WorldWidthAtScale1,
+                worldHeightAtScale1: this.square1WorldHeightAtScale1,
+                scaleMultiplier: this.square1ScaleMultiplier,
+                visualOffsetX: this.square1VisualOffsetX,
+                visualOffsetZ: this.square1VisualOffsetZ,
             },
         ];
 
@@ -741,25 +807,96 @@ export class BlockSpawn extends Component {
         totalRows: number,
         outsetCells: number = 0,
     ): primitives.IGeometry {
+
         if (def.colorGroup === 'green') {
-            return this.createGreenImageLayerGeometry(def, bounds, blockCols, blockRows, totalCols, totalRows, outsetCells);
+            return this.createGreenImageLayerGeometry(
+                def, bounds, blockCols, blockRows,
+                totalCols, totalRows, outsetCells
+            );
         }
 
         if (def.colorGroup === 'purple') {
-            return this.createPurpleImageLayerGeometry(def, bounds, blockCols, blockRows, totalCols, totalRows, outsetCells);
+            return this.createPurpleImageLayerGeometry(
+                def, bounds, blockCols, blockRows,
+                totalCols, totalRows, outsetCells
+            );
         }
 
         if (def.colorGroup === 'red') {
-            return this.createRedImageLayerGeometry(def, bounds, blockCols, blockRows, totalCols, totalRows, outsetCells);
+            return this.createRedImageLayerGeometry(
+                def, bounds, blockCols, blockRows,
+                totalCols, totalRows, outsetCells
+            );
         }
 
-        if (def.colorGroup !== 'blue') {
-            return this.createPlainImageLayerGeometry(def, bounds, blockCols, blockRows, totalCols, totalRows);
+        if (def.colorGroup === 'orange') {
+            return this.createOrangeImageLayerGeometry(
+                def, bounds, blockCols, blockRows,
+                totalCols, totalRows, outsetCells
+            );
         }
 
-        return this.createBlueImageLayerGeometry(def, bounds, blockCols, blockRows, totalCols, totalRows, outsetCells);
+        if (def.colorGroup === 'blue') {
+            return this.createBlueImageLayerGeometry(
+                def, bounds, blockCols, blockRows,
+                totalCols, totalRows, outsetCells
+            );
+        }
+
+        return this.createPlainImageLayerGeometry(
+            def, bounds, blockCols, blockRows,
+            totalCols, totalRows
+        );
     }
 
+    private createOrangeImageLayerGeometry(
+        def: BlockDef,
+        bounds: ColorGroupBounds,
+        blockCols: number,
+        blockRows: number,
+        totalCols: number,
+        totalRows: number,
+        outsetCells: number = 0,
+    ): primitives.IGeometry {
+        if (def.id === 'c_shape_main') {
+            return this.createRoundedImageLayerGeometryFromOutline(
+                def,
+                bounds,
+                blockCols,
+                blockRows,
+                totalCols,
+                totalRows,
+                [
+                    { x: 0, y: 0 },
+                    { x: 2, y: 0 },
+                    { x: 2, y: 1 },
+                    { x: 1, y: 1 },
+                    { x: 1, y: 2 },
+                    { x: 2, y: 2 },
+                    { x: 2, y: 3 },
+                    { x: 0, y: 3 },
+                ],
+                this.orangeImageCornerRadiusRatio,
+                outsetCells,
+            );
+        }
+
+        if (def.id === 'c_shape_filler') {
+            return this.createRoundedImageLayerGeometryFromCells(
+                def,
+                bounds,
+                blockCols,
+                blockRows,
+                totalCols,
+                totalRows,
+                [new Vec2(0, 0)],
+                this.orangeImageCornerRadiusRatio,
+                outsetCells,
+            );
+        }
+
+        return this.createPlainImageLayerGeometry(def, bounds, blockCols, blockRows, totalCols, totalRows, outsetCells);
+    }
     private createBlueImageLayerGeometry(
         def: BlockDef,
         bounds: ColorGroupBounds,
@@ -778,12 +915,12 @@ export class BlockSpawn extends Component {
                 totalCols,
                 totalRows,
                 [
-                    { x: 1, y: 0 },
-                    { x: 2, y: 0 },
-                    { x: 2, y: 2 },
+                    { x: 0, y: 0 },  // top-left
+                    { x: 1, y: 0 },  // top-right của ô (0,0)
+                    { x: 1, y: 1 },  // góc trong chữ L
+                    { x: 2, y: 1 },  // right
+                    { x: 2, y: 2 },  // bottom-right
                     { x: 0, y: 2 },
-                    { x: 0, y: 1 },
-                    { x: 1, y: 1 },
                 ],
                 this.imageCornerRadiusRatio,
                 outsetCells,
@@ -1581,6 +1718,9 @@ export class BlockSpawn extends Component {
         if (def.colorGroup === 'red') {
             return this.getRedImageLayerPositionOffset(def, block);
         }
+        if (def.colorGroup === 'orange') {
+            return this.getOrangeImageLayerPositionOffset(def, block);
+        }
 
         if (def.colorGroup !== 'blue') {
             return new Vec2(0, 0);
@@ -1663,6 +1803,23 @@ export class BlockSpawn extends Component {
 
         return new Vec2(0, 0);
     }
+    private getOrangeImageLayerPositionOffset(def: BlockDef, block: Node): Vec2 {
+        if (def.id === 'c_shape_main') {
+            return new Vec2(
+                this.orangeCShapeImageOffsetX / Math.max(0.001, block.scale.x),
+                this.orangeCShapeImageOffsetZ / Math.max(0.001, block.scale.z),
+            );
+        }
+
+        if (def.id === 'c_shape_filler') {
+            return new Vec2(
+                this.orangeFillerImageOffsetX / Math.max(0.001, block.scale.x),
+                this.orangeFillerImageOffsetZ / Math.max(0.001, block.scale.z),
+            );
+        }
+
+        return new Vec2(0, 0);
+    }
 
     private getImageSliceEdgeOffsetZ(
         def: BlockDef,
@@ -1731,6 +1888,9 @@ export class BlockSpawn extends Component {
         if (def.colorGroup === 'purple') {
             return this.purpleImageScaleMultiplier;
         }
+        if (def.id === 'orange') {
+            return this.orangeImageScaleMultiplier;
+        }
 
         if (def.colorGroup !== 'blue') {
             return this.imageScaleMultiplier;
@@ -1740,7 +1900,7 @@ export class BlockSpawn extends Component {
             return this.blueL1ImageScaleMultiplier;
         }
 
-        return this.blueImageScaleMultiplier;
+        return this.imageScaleMultiplier;
     }
 
     private shouldPreserveImageAspectRatio(def: BlockDef): boolean {
@@ -1850,6 +2010,8 @@ export class BlockSpawn extends Component {
                 return { texture: this.blueTexture, color: this.blueColor, borderColor: this.blueBorderColor };
             case 'red':
                 return { texture: this.redTexture, color: this.redColor, borderColor: this.redBorderColor };
+            case 'orange':
+                return { texture: this.orangeTexture, color: this.orangeColor, borderColor: this.orangeBorderColor };
             default:
                 return null;
         }

@@ -1,4 +1,4 @@
-import { _decorator, Button, Canvas, Color, Component, find, Label, Mat4, Node, tween, Tween, UITransform, UIOpacity, Vec3, Graphics, view } from 'cc';
+import { _decorator, Button, Canvas, Color, Component, find, Label, Mat4, Node, tween, Tween, UITransform, UIOpacity, Vec3, Graphics, view, director, profiler } from 'cc';
 import { BlockSpawn } from './BlockSpawn';
 import { DragControl } from './DragControl';
 import { BoardPreview } from './BoardPreview';
@@ -110,6 +110,7 @@ export class GameController extends Component {
     }
 
     start() {
+        // profiler.showStats();
         this.resetTimer();
         this.resetTargetItems();
         this.playTargetIntroEffect(() => { });
@@ -544,7 +545,8 @@ export class GameController extends Component {
         'green': 'Img_panel',
         'blue': 'Img_panel-1',
         'red': 'Img_panel-2',
-        'purple': 'Img_panel-3'
+        'purple': 'Img_panel-3',
+        'orange': 'Img_panel-4'
     };
 
     public getTargetNodeForColorGroup(colorGroup: string): Node | null {
@@ -561,6 +563,7 @@ export class GameController extends Component {
         const parent = targetNode.parent;
         if (!parent) return;
         const generation = this.targetCollectGeneration;
+        if (AudioManager.instance) AudioManager.instance.playGroupCollected();
 
         Tween.stopAllByTarget(targetNode);
 
@@ -622,7 +625,6 @@ export class GameController extends Component {
                     return;
                 }
 
-                if (AudioManager.instance) AudioManager.instance.playBlockMatch();
 
                 targetNode.setParent(parent);
                 targetNode.active = false;
@@ -738,11 +740,11 @@ export class GameController extends Component {
                 return;
             }
 
-            this.spawnTargetCollectSparkles(parent, center, layer, targetNode, 5);
+            this.spawnTargetCollectSparkles(parent, center, layer, targetNode, 2);
         };
 
         emit();
-        this.schedule(emit, 0.08);
+        this.schedule(emit, 0.18);
 
         const stop = () => {
             active = false;
@@ -841,6 +843,14 @@ export class GameController extends Component {
             if (targetNode.parent !== this.targetItemsRootNode) {
                 targetNode.setParent(this.targetItemsRootNode);
             }
+            targetNode.active = true;
+            targetNode.setRotationFromEuler(0, 0, 0);
+            if (this.targetBasePositions.has(targetNode)) {
+                targetNode.setPosition(this.getTargetBasePosition(targetNode));
+            }
+            if (this.targetBaseScales.has(targetNode)) {
+                targetNode.setScale(this.getTargetBaseScale(targetNode));
+            }
         }
 
         this.destroyTargetEffectChildren(this.targetItemsRootNode);
@@ -884,7 +894,7 @@ export class GameController extends Component {
                     continue;
                 }
 
-                if (child.name.startsWith('TargetItem_')) {
+                if (child.name.startsWith('TargetItem_') || child.name.startsWith('Img_panel')) {
                     result.push(child);
                     continue;
                 }

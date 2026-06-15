@@ -28,7 +28,7 @@ export class BoardPreview extends Component {
     cols: number = 5;
 
     @property
-    rows: number = 7;
+    rows: number = 6;
 
     /**
      * Kich thuoc 1 o tinh theo world unit.
