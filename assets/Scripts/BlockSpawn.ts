@@ -607,7 +607,7 @@ export class BlockSpawn extends Component {
                 colorGroup: 'orange',
                 prefab: this.square1Prefab,
                 col: 4,
-                row: 7,
+                row: 6,
                 targetCol: 1,
                 targetRow: 1,
                 shape: this.rectShape(1, 1),

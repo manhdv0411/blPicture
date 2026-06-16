@@ -13,13 +13,10 @@ const { ccclass, property } = _decorator;
 @ccclass('AudioManager')
 export class AudioManager extends Component {
 
-    // ── Singleton ──────────────────────────────────────────
     private static _instance: AudioManager | null = null;
-    // Trong AudioManager.ts, thêm static method này:
     public static get instance(): AudioManager | null {
         if (AudioManager._instance) return AudioManager._instance;
 
-        // Tự tìm nếu chưa set (fix lỗi thứ tự khởi tạo)
         const canvas = find('Canvas') || find('block/Canvas');
         if (canvas) {
             const am = canvas.getComponent(AudioManager);
@@ -32,61 +29,54 @@ export class AudioManager extends Component {
         return null;
     }
 
-    // ── Clip slots (kéo file vào Inspector) ────────────────
     @property(AudioClip)
-    clipBlockPickup: AudioClip | null = null;       // nhấc block lên
+    clipBlockPickup: AudioClip | null = null;
 
     @property(AudioClip)
-    clipBlockDrop: AudioClip | null = null;         // thả block xuống
+    clipBlockDrop: AudioClip | null = null;
 
     @property(AudioClip)
-    clipBlockMatch: AudioClip | null = null;        // ghép đúng nhóm
+    clipBlockMatch: AudioClip | null = null;
 
     @property(AudioClip)
-    clipWin: AudioClip | null = null;               // thắng level
+    clipWin: AudioClip | null = null;
 
     @property(AudioClip)
-    clipTimeout: AudioClip | null = null;           // hết giờ
+    clipTimeout: AudioClip | null = null;
 
     @property(AudioClip)
-    clipTick: AudioClip | null = null;              // đồng hồ đếm ngược
+    clipTick: AudioClip | null = null;
 
     @property(AudioClip)
-    clipBgm: AudioClip | null = null;              // nhạc nền
+    clipBgm: AudioClip | null = null;
 
     @property(AudioClip)
-    clipGroupCollected: AudioClip | null = null;    // ghép xong cả group, bay lên TopUI
+    clipGroupCollected: AudioClip | null = null;
 
-    // ── Cài đặt âm lượng ───────────────────────────────────
     @property({ range: [0, 1], slide: true })
     sfxVolume: number = 1.0;
 
     @property({ range: [0, 1], slide: true })
     bgmVolume: number = 0.45;
 
-    // Tick bắt đầu kêu khi còn bao nhiêu giây
     @property
     tickWarningThreshold: number = 10;
 
-    // ── AudioSource nodes ───────────────────────────────────
-    private sfxSource: AudioSource | null = null;   // dùng chung cho SFX
-    private bgmSource: AudioSource | null = null;   // nhạc nền riêng
+    private sfxSource: AudioSource | null = null;
+    private bgmSource: AudioSource | null = null;
 
-    // ── Trạng thái ─────────────────────────────────────────
     private _sfxMuted = false;
     private _bgmMuted = false;
     private _tickActive = false;
     private _tickScheduled = false;
     private _lastTimeLeft = -1;
-
-    // ── Lifecycle ───────────────────────────────────────────
+    private _bgmUnlocked = false;
     onLoad() {
         if (AudioManager._instance && AudioManager._instance !== this) {
             this.node.destroy();
             return;
         }
         AudioManager._instance = this;
-        game.addPersistRootNode(this.node); // không bị destroy khi đổi scene
 
         this.sfxSource = this.createSource(false);
         this.bgmSource = this.createSource(true);
@@ -107,44 +97,34 @@ export class AudioManager extends Component {
         return src;
     }
 
-    // ── SFX public API ──────────────────────────────────────
 
-    /** Nhấc block lên */
     playBlockUp() {
         console.log('playBlockUp called, clip:', this.clipBlockPickup, 'muted:', this._sfxMuted);
         this.playSfx(this.clipBlockPickup);
     }
 
-    /** Thả block xuống */
     playBlockDown() {
         this.playSfx(this.clipBlockDrop);
     }
 
-    /** Ghép đúng nhóm màu */
     playBlockMatch() {
         this.playSfx(this.clipBlockMatch);
     }
 
-    /** Thắng level */
     playWin() {
         this.stopBgm();
         this.playSfx(this.clipWin);
     }
-    /** Ghép xong cả nhóm, item bay lên TopUI */
     playGroupCollected() {
         this.playSfx(this.clipGroupCollected);
     }
-    /** Hết giờ */
     playTimeout() {
         this.stopBgm();
         this.stopTick();
         this.playSfx(this.clipTimeout);
     }
 
-    /**
-     * Gọi mỗi giây từ timer — tự động bật tick khi còn <= threshold giây.
-     * @param timeLeft số giây còn lại
-     */
+
     updateTimer(timeLeft: number) {
         const rounded = Math.ceil(timeLeft);
         if (rounded === this._lastTimeLeft) return;
@@ -157,17 +137,14 @@ export class AudioManager extends Component {
         }
     }
 
-    /** Bật tick một tiếng (gọi từ updateTimer hoặc thủ công) */
     playTick() {
         this.playSfx(this.clipTick, 0.75);
     }
 
-    /** Dừng tick đếm ngược */
     stopTick() {
         this._tickActive = false;
     }
 
-    // ── BGM public API ──────────────────────────────────────
 
     playBgm() {
         if (!this.bgmSource || !this.clipBgm || this._bgmMuted) return;
@@ -176,7 +153,27 @@ export class AudioManager extends Component {
         this.bgmSource.volume = this.bgmVolume;
         this.bgmSource.play();
     }
+    private getAudioContext(): AudioContext | null {
+        // Cocos 3.x lưu AudioContext trong các vị trí này
+        const win = window as any;
+        return (
+            win.__audioContext ||
+            win.cc?.director?.root?.device?._gfxAPI?.audioContext ||
+            (AudioSource as any)._audioContext ||
+            (AudioSource as any).__audioContext ||
+            win.AudioContext && win._cocosAudioCtx ||
+            null
+        );
+    }
 
+    unlockAndPlayBgm() {
+    if (this._bgmUnlocked) {
+        this.playBgm(); // Đã unlock rồi thì chỉ play lại nếu chưa playing
+        return;
+    }
+    this._bgmUnlocked = true;
+    this.playBgm();
+}
     stopBgm() {
         this.bgmSource?.stop();
     }
@@ -190,7 +187,6 @@ export class AudioManager extends Component {
         this.bgmSource?.play();
     }
 
-    // ── Volume / Mute ───────────────────────────────────────
 
     setSfxVolume(v: number) {
         this.sfxVolume = Math.max(0, Math.min(1, v));
@@ -216,7 +212,6 @@ export class AudioManager extends Component {
     get isSfxMuted() { return this._sfxMuted; }
     get isBgmMuted() { return this._bgmMuted; }
 
-    // ── Internal ────────────────────────────────────────────
 
     private playSfx(clip: AudioClip | null, volumeScale: number = 1) {
         console.log('playSfx:', clip, 'source:', this.sfxSource, 'muted:', this._sfxMuted);

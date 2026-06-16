@@ -147,7 +147,6 @@ export class DragControl extends Component {
     @property
     shatterFragmentFallDuration: number = 0.58;
 
-    // Object pools to prevent instantiation lag
     private fragmentPool: Node[] = [];
     private sparklePool: Node[] = [];
 
@@ -293,7 +292,6 @@ export class DragControl extends Component {
 
         this.draggingNode.setPosition(nextX, nextY, nextZ);
 
-        // Hiệu ứng nghiêng (tilt) mượt mà khi lách và di chuyển
         const velX = (nextX - current.x) / Math.max(deltaTime, 0.001);
         const velZ = (nextZ - current.z) / Math.max(deltaTime, 0.001);
 
@@ -437,91 +435,127 @@ export class DragControl extends Component {
             this.destroyEffectChildren(child, prefixes);
         }
     }
-
-    private onTouchStart(event: EventTouch) {
-        this.beginDrag(event.getLocation());
+    private tryUnlockAudio() {
+        const canvas = find('Canvas') || find('block/Canvas');
+        const am = canvas?.getComponent(AudioManager);
+        if (am) am.unlockAndPlayBgm();
+    }
+   private onTouchStart(event: EventTouch) {
+    // Hack: tạo AudioContext mới, browser sẽ reuse context đang có
+    try {
+        const AC = (window as any).AudioContext || (window as any).webkitAudioContext;
+        if (AC) {
+            // Browser chỉ tạo 1 AudioContext per page, cái này sẽ là cái Cocos đang dùng
+            const ctx = new AC();
+            if (ctx.state === 'suspended') {
+                ctx.resume().then(() => {
+                    console.log('ctx resumed, state:', ctx.state);
+                });
+            } else {
+                console.log('ctx state:', ctx.state);
+            }
+        }
+    } catch(e) {
+        console.log('AC error:', e);
     }
 
+    this.tryUnlockAudio();
+    this.beginDrag(event.getLocation());
+}
+
     private onTouchMove(event: EventTouch) {
+        this.tryUnlockAudio();
         this.moveDrag(event.getLocation());
     }
 
     private onTouchEnd() {
+        this.tryUnlockAudio();
         this.endDrag();
     }
 
     private onMouseDown(event: EventMouse) {
+        this.tryUnlockAudio();
         this.beginDrag(event.getLocation());
     }
 
     private onMouseMove(event: EventMouse) {
+        this.tryUnlockAudio();
         this.moveDrag(event.getLocation());
     }
 
     private onMouseUp() {
+        this.tryUnlockAudio();
         this.endDrag();
     }
 
     private beginDrag(screenPos: Vec2) {
-        if (this.inputLocked || DragControl.globalInputLocked) {
-            return;
-        }
-
-        if (this.draggingBlock || this.draggingNode) {
-            return;
-        }
-
-        if (!this.mainCamera) {
-            console.error('Chua keo Main Camera vao PuzzleDragController');
-            return;
-        }
-
-        this.syncFromBoardPreview();
-        this.rebuildOccupied();
-
-        const hitNode = this.raycastBlock(screenPos);
-        if (!hitNode) {
-            return;
-        }
-
-        const block = this.findDraggableBlock(hitNode);
-        if (!block) {
-            return;
-        }
-
-        this.startTimerForFirstDrag();
-
-        if (AudioManager.instance) AudioManager.instance.playBlockUp();
-
-        this.draggingBlock = block;
-        this.draggingNode = block.node;
-        this.draggingStartCol = block.col;
-        this.draggingStartRow = block.row;
-        this.draggingCurrentCol = block.col;
-        this.draggingCurrentRow = block.row;
-        this.draggingBaseScale = this.getStableBaseScale(block.node);
-        this.desiredDragPosition = null;
-        this.removeBlockFromOccupied(block);
-
-        const liftPos = this.gridToWorldForBlock(block, block.col, block.row);
-        const grabWorld = this.screenToBoardWorld(screenPos);
-        this.dragPointerOffset.set(0, 0, 0);
-        if (grabWorld) {
-            this.dragPointerOffset.set(grabWorld.x - liftPos.x, 0, grabWorld.z - liftPos.z);
-        }
-
-        const liftedScale = this.draggingBaseScale.clone().multiplyScalar(this.holdScaleMultiplier);
-        this.desiredDragPosition = new Vec3(liftPos.x, this.blockY + this.getEffectiveDragLiftY(), liftPos.z);
-        this.lastValidDragPosition = this.desiredDragPosition.clone();
-
-        Tween.stopAllByTarget(this.draggingNode);
-        this.draggingNode.setScale(this.draggingBaseScale);
-        this.setBlockHighlight(this.draggingNode, true);
-        tween(this.draggingNode)
-            .to(this.pickupDuration, { scale: liftedScale }, { easing: 'quadOut' })
-            .start();
+    if (this.inputLocked || DragControl.globalInputLocked) {
+        return;
     }
 
+    if (this.draggingBlock || this.draggingNode) {
+        return;
+    }
+
+    if (!this.mainCamera) {
+        return;
+    }
+
+    this.syncFromBoardPreview();
+    this.rebuildOccupied();
+
+    const hitNode = this.raycastBlock(screenPos);
+    if (!hitNode) {
+        return;
+    }
+
+    const block = this.findDraggableBlock(hitNode);
+    if (!block) {
+        return;
+    }
+
+    this.startTimerForFirstDrag();
+
+    // Unlock audio trước, delay playBlockUp để AudioContext kịp resume
+    const canvas = find('Canvas') || find('block/Canvas');
+    const am = canvas?.getComponent(AudioManager);
+    if (am) {
+        am.unlockAndPlayBgm();
+        this.scheduleOnce(() => {
+            if (AudioManager.instance) AudioManager.instance.playBlockUp();
+        }, 0.05);
+    } else {
+        if (AudioManager.instance) AudioManager.instance.playBlockUp();
+    }
+
+    this.draggingBlock = block;
+    this.draggingNode = block.node;
+    this.draggingStartCol = block.col;
+    this.draggingStartRow = block.row;
+    this.draggingCurrentCol = block.col;
+    this.draggingCurrentRow = block.row;
+    this.draggingBaseScale = this.getStableBaseScale(block.node);
+    this.desiredDragPosition = null;
+    this.removeBlockFromOccupied(block);
+
+    const liftPos = this.gridToWorldForBlock(block, block.col, block.row);
+    const grabWorld = this.screenToBoardWorld(screenPos);
+    this.dragPointerOffset.set(0, 0, 0);
+    if (grabWorld) {
+        this.dragPointerOffset.set(grabWorld.x - liftPos.x, 0, grabWorld.z - liftPos.z);
+    }
+
+    const liftedScale = this.draggingBaseScale.clone().multiplyScalar(this.holdScaleMultiplier);
+    this.desiredDragPosition = new Vec3(liftPos.x, this.blockY + this.getEffectiveDragLiftY(), liftPos.z);
+    this.lastValidDragPosition = this.desiredDragPosition.clone();
+
+    Tween.stopAllByTarget(this.draggingNode);
+    this.draggingNode.setScale(this.draggingBaseScale);
+    this.setBlockHighlight(this.draggingNode, true);
+    tween(this.draggingNode)
+        .to(this.pickupDuration, { scale: liftedScale }, { easing: 'quadOut' })
+        .start();
+}
     private moveDrag(screenPos: Vec2) {
         if (!this.draggingBlock || !this.draggingNode || !this.mainCamera) {
             return;
@@ -545,15 +579,95 @@ export class DragControl extends Component {
             !this.canPlaceBlock(this.draggingBlock, targetGrid.col, targetGrid.row) ||
             !this.canReachGrid(targetGrid.col, targetGrid.row)
         ) {
-            // Smoothly hold at the collision edge instead of snapping to cell center
-            this.desiredDragPosition = new Vec3(collisionWorld.x, this.blockY + this.getEffectiveDragLiftY(), collisionWorld.z);
+            // Tìm cell hợp lệ gần nhất để hút về thay vì kẹt tại collision edge
+            const nearestValid = this.findNearestValidGrid(this.draggingBlock, collisionWorld);
+            if (nearestValid) {
+                const nearestWorld = this.gridToWorldForBlock(
+                    this.draggingBlock,
+                    nearestValid.col,
+                    nearestValid.row
+                );
+                const dx = collisionWorld.x - nearestWorld.x;
+                const dz = collisionWorld.z - nearestWorld.z;
+                const dist = Math.sqrt(dx * dx + dz * dz);
+                const magnetRadius = this.cellStepX * 0.6;
+                const magnetStrength = dist < magnetRadius
+                    ? (1 - dist / magnetRadius) * 0.45
+                    : 0;
+
+                this.desiredDragPosition = new Vec3(
+                    collisionWorld.x + (nearestWorld.x - collisionWorld.x) * magnetStrength,
+                    this.blockY + this.getEffectiveDragLiftY(),
+                    collisionWorld.z + (nearestWorld.z - collisionWorld.z) * magnetStrength,
+                );
+            } else {
+                this.desiredDragPosition = new Vec3(
+                    collisionWorld.x,
+                    this.blockY + this.getEffectiveDragLiftY(),
+                    collisionWorld.z
+                );
+            }
             return;
         }
 
         this.draggingCurrentCol = targetGrid.col;
         this.draggingCurrentRow = targetGrid.row;
-        this.desiredDragPosition = new Vec3(collisionWorld.x, this.blockY + this.getEffectiveDragLiftY(), collisionWorld.z);
+
+        const snapTarget = this.gridToWorldForBlock(
+            this.draggingBlock,
+            targetGrid.col,
+            targetGrid.row
+        );
+        const dx = collisionWorld.x - snapTarget.x;
+        const dz = collisionWorld.z - snapTarget.z;
+        const dist = Math.sqrt(dx * dx + dz * dz);
+        const magnetRadius = this.cellStepX * 0.38;
+        const magnetStrength = dist < magnetRadius
+            ? (1 - dist / magnetRadius) * 0.55
+            : 0;
+
+        this.desiredDragPosition = new Vec3(
+            collisionWorld.x + (snapTarget.x - collisionWorld.x) * magnetStrength,
+            this.blockY + this.getEffectiveDragLiftY(),
+            collisionWorld.z + (snapTarget.z - collisionWorld.z) * magnetStrength,
+        );
         this.lastValidDragPosition = this.desiredDragPosition.clone();
+    }
+
+    // Thêm method mới này
+    private findNearestValidGrid(
+        block: DraggableBlock,
+        fromWorld: Vec3
+    ): { col: number; row: number } | null {
+        const currentGrid = this.worldToPlacementGridForBlock(block, fromWorld);
+        const searchRadius = 2; // tìm trong vòng 2 cell xung quanh
+        let bestGrid: { col: number; row: number } | null = null;
+        let bestDist = Number.POSITIVE_INFINITY;
+
+        for (let dc = -searchRadius; dc <= searchRadius; dc++) {
+            for (let dr = -searchRadius; dr <= searchRadius; dr++) {
+                const candidate = this.clampGridForBlock(block, {
+                    col: currentGrid.col + dc,
+                    row: currentGrid.row + dr,
+                });
+
+                if (!this.canPlaceBlock(block, candidate.col, candidate.row)) {
+                    continue;
+                }
+
+                const candidateWorld = this.gridToWorldForBlock(block, candidate.col, candidate.row);
+                const dx = fromWorld.x - candidateWorld.x;
+                const dz = fromWorld.z - candidateWorld.z;
+                const dist = Math.sqrt(dx * dx + dz * dz);
+
+                if (dist < bestDist) {
+                    bestDist = dist;
+                    bestGrid = candidate;
+                }
+            }
+        }
+
+        return bestGrid;
     }
 
     private endDrag() {
@@ -780,16 +894,6 @@ export class DragControl extends Component {
         return this.gridToWorld(centerCol, centerRow);
     }
 
-    private worldToGrid(x: number, z: number): { col: number; row: number } {
-        const col = Math.round((x - this.centerX) / this.cellStepX + (this.cols - 1) * 0.5);
-        const row = Math.round((z - this.centerZ) / this.cellStepZ + (this.rows - 1) * 0.5);
-
-        return {
-            col: Math.max(0, Math.min(this.cols - 1, col)),
-            row: Math.max(0, Math.min(this.rows - 1, row)),
-        };
-    }
-
     private worldToGridForBlock(block: DraggableBlock, x: number, z: number): { col: number; row: number } {
         const blockSize = this.getBlockSize(block);
         const centerCol = (x - this.centerX) / this.cellStepX + (this.cols - 1) * 0.5;
@@ -981,7 +1085,6 @@ export class DragControl extends Component {
 
                 const occupiedWorld = this.gridToWorld(occupiedCell.col, occupiedCell.row);
 
-                // Sử dụng va chạm dạng hình tròn (chặt góc) để dễ lách qua góc hơn
                 if (this.roundedRectsOverlap(
                     draggedCenterX - occupiedWorld.x,
                     draggedCenterZ - occupiedWorld.z,
@@ -998,7 +1101,7 @@ export class DragControl extends Component {
     }
 
     private getEffectiveDragCollisionFillRatio(): number {
-        return Math.max(0.92, Math.min(1.0, this.dragCollisionFillRatio));
+        return Math.max(0.5, Math.min(1.0, this.dragCollisionFillRatio));
     }
 
     private roundedRectsOverlap(dx: number, dz: number, width: number, height: number, cornerRadius: number): boolean {
@@ -1087,25 +1190,6 @@ export class DragControl extends Component {
 
         return false;
     }
-
-    private holdAtCurrentReachableCell() {
-        if (!this.draggingBlock || !this.draggingNode) {
-            return;
-        }
-
-        this.desiredDragPosition = this.gridToLiftedWorldForBlock(
-            this.draggingBlock,
-            this.draggingCurrentCol,
-            this.draggingCurrentRow,
-        );
-        this.lastValidDragPosition = this.desiredDragPosition.clone();
-    }
-
-    private gridToLiftedWorldForBlock(block: DraggableBlock, col: number, row: number): Vec3 {
-        const currentPos = this.gridToWorldForBlock(block, col, row);
-        return new Vec3(currentPos.x, this.blockY + this.getEffectiveDragLiftY(), currentPos.z);
-    }
-
     private getEffectiveDragLiftY(): number {
         return Math.max(this.dragLiftY, 0.5);
     }
@@ -1163,9 +1247,7 @@ export class DragControl extends Component {
 
         try {
             outlineMaterial.setProperty('mainColor', this.holdHighlightColor);
-            // outlineMaterial.setProperty('albedo', this.holdHighlightColor);
         } catch {
-            // Builtin materials may expose either mainColor or albedo depending on the active effect.
         }
 
         outline.name = '__DragOutlineMesh';
@@ -1376,10 +1458,8 @@ export class DragControl extends Component {
                 return;
             }
 
-            // Check win right when the image starts flying to target
             this.checkWin(validNodes);
 
-            // if (AudioManager.instance) AudioManager.instance.playBlockBreak();
 
             const zeroScale = new Vec3(0.001, 0.001, 0.001);
             let destroyedCount = 0;
@@ -1482,8 +1562,6 @@ export class DragControl extends Component {
 
         for (let i = 0; i < fragmentCount; i++) {
             const fragment = this.getFragmentNode(mat, meshVariants[i % meshVariants.length]);
-            console.log("Material:", mat);
-            console.log("Mesh:", meshVariants[i % meshVariants.length]);
 
             fragment.setParent(blockNode.parent);
 
@@ -1854,139 +1932,6 @@ export class DragControl extends Component {
             height: Math.max(1, Math.abs(imageLayer.scale.y)),
         };
     }
-
-    private flyImageToTarget(
-        imageLayer: Node,
-        targetNode: Node,
-        mainCamera: Camera,
-        uiCamera: Camera | null,
-        onComplete: () => void,
-        tint?: Color,
-    ) {
-        if (uiCamera && targetNode.parent && this.prepareImageLayerForUiFlight(imageLayer, targetNode, mainCamera, uiCamera)) {
-            this.flyUiImageToTarget(imageLayer, targetNode, onComplete, tint);
-            return;
-        }
-
-        const targetWorldPos = targetNode.worldPosition;
-        const screenPos = new Vec3();
-        if (uiCamera) {
-            uiCamera.worldToScreen(targetWorldPos, screenPos);
-        } else {
-            screenPos.set(targetWorldPos.x, targetWorldPos.y, targetWorldPos.z);
-        }
-
-        const startWorldPos = imageLayer.worldPosition.clone();
-        const flyPlaneY = startWorldPos.y + 0.65;
-        const targetWorldOnPlane = this.screenToWorldOnY(mainCamera, screenPos, flyPlaneY);
-        if (!targetWorldOnPlane) {
-            this.flyImageUpFallback(imageLayer, onComplete, tint);
-            return;
-        }
-
-        imageLayer.setWorldPosition(startWorldPos);
-        const parent = imageLayer.parent;
-        if (!parent) {
-            this.flyImageUpFallback(imageLayer, onComplete, tint);
-            return;
-        }
-
-        const targetLocalPosition = new Vec3();
-        parent.inverseTransformPoint(targetLocalPosition, targetWorldOnPlane);
-
-        const duration = Math.max(0.1, this.imageFlyDuration);
-        const liftDuration = Math.max(0.01, this.imageLiftDuration);
-        const liftedPosition = imageLayer.position.clone();
-        liftedPosition.y += Math.max(0, this.imageLiftHeight);
-        const targetScale = imageLayer.scale.clone().multiplyScalar(0.25);
-        const glowNode = this.createFlyingImageGlow(imageLayer, tint);
-        const stopTrail = this.startFlyingImageStarTrail(imageLayer, liftDuration + duration, tint);
-
-        const flyProgress = { t: 0 };
-        tween(flyProgress)
-            .delay(liftDuration)
-            .to(duration, { t: 1 }, {
-                easing: 'quadInOut',
-                onUpdate: () => {
-                    if (!imageLayer.isValid) return;
-                    let dynTargetLocal = targetLocalPosition.clone();
-                    const dynTargetWorld = targetNode.worldPosition;
-                    const dynScreenPos = new Vec3();
-                    if (uiCamera) {
-                        uiCamera.worldToScreen(dynTargetWorld, dynScreenPos);
-                    } else {
-                        dynScreenPos.set(dynTargetWorld.x, dynTargetWorld.y, dynTargetWorld.z);
-                    }
-                    const dynWorldOnPlane = this.screenToWorldOnY(mainCamera, dynScreenPos, flyPlaneY);
-                    if (dynWorldOnPlane && parent) {
-                        parent.inverseTransformPoint(dynTargetLocal, dynWorldOnPlane);
-                    }
-                    const curPos = new Vec3();
-                    Vec3.lerp(curPos, liftedPosition, dynTargetLocal, flyProgress.t);
-                    imageLayer.setPosition(curPos);
-                    if (glowNode && glowNode.isValid) glowNode.setPosition(curPos);
-                }
-            })
-            .start();
-
-        tween(imageLayer)
-            .parallel(
-                tween().to(liftDuration, { position: liftedPosition }, { easing: 'quadOut' }),
-                glowNode
-                    ? tween(glowNode).to(liftDuration, { position: liftedPosition }, { easing: 'quadOut' })
-                    : tween(),
-            )
-            .parallel(
-                tween().to(duration, { scale: targetScale }, { easing: 'quadInOut' }),
-                glowNode
-                    ? tween(glowNode)
-                        .to(duration, { scale: targetScale.clone().multiplyScalar(this.imageGlowScaleMultiplier) }, { easing: 'quadInOut' })
-                    : tween(),
-            )
-            .delay(Math.max(0, this.imageTargetHoldDuration))
-            .call(() => {
-                stopTrail();
-                if (glowNode?.isValid) glowNode.destroy();
-                if (imageLayer.isValid) imageLayer.destroy();
-                onComplete();
-            })
-            .start();
-    }
-
-    private prepareImageLayerForUiFlight(
-        imageLayer: Node,
-        targetNode: Node,
-        mainCamera: Camera,
-        uiCamera: Camera,
-    ): boolean {
-        if (!targetNode.parent) {
-            return false;
-        }
-
-        const startScreenPos = new Vec3();
-        mainCamera.worldToScreen(imageLayer.worldPosition, startScreenPos);
-
-        const targetScreenPos = new Vec3();
-        uiCamera.worldToScreen(targetNode.worldPosition, targetScreenPos);
-        startScreenPos.z = targetScreenPos.z;
-
-        const startUiWorldPos = new Vec3();
-        uiCamera.screenToWorld(startScreenPos, startUiWorldPos);
-
-        const startUiLocalPos = new Vec3();
-        targetNode.parent.inverseTransformPoint(startUiLocalPos, startUiWorldPos);
-
-        const worldRotation = imageLayer.worldRotation.clone();
-        imageLayer.setParent(targetNode.parent);
-        imageLayer.setPosition(startUiLocalPos);
-        imageLayer.setWorldRotation(worldRotation);
-        imageLayer.setScale(imageLayer.scale.clone().multiplyScalar(Math.max(1, this.imageUiScaleMultiplier)));
-        imageLayer.setSiblingIndex(targetNode.parent.children.length - 1);
-        this.setLayerRecursive(imageLayer, targetNode.layer);
-
-        return true;
-    }
-
     private flyUiImageToTarget(imageLayer: Node, targetNode: Node, onComplete: () => void, tint?: Color) {
         if (!targetNode.parent) {
             this.flyImageUpFallback(imageLayer, onComplete, tint);
@@ -2219,22 +2164,7 @@ export class DragControl extends Component {
         }
     }
 
-    private drawSoftGlow(graphics: Graphics, size: number, tint?: Color) {
-        graphics.clear();
-        const color = tint || new Color(110, 225, 255, 255);
 
-        graphics.fillColor = new Color(color.r, color.g, color.b, 42);
-        graphics.circle(0, 0, size * 0.5);
-        graphics.fill();
-
-        graphics.fillColor = this.mixColor(color, new Color(255, 255, 255, 255), 0.45, 68);
-        graphics.circle(0, 0, size * 0.34);
-        graphics.fill();
-
-        graphics.fillColor = this.mixColor(color, new Color(255, 255, 255, 255), 0.78, 100);
-        graphics.circle(0, 0, size * 0.18);
-        graphics.fill();
-    }
 
     private startFlyingImageStarTrail(imageLayer: Node, totalDuration: number, tint?: Color): () => void {
         const interval = Math.max(0.016, this.imageStarTrailInterval);

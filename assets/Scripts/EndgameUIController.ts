@@ -313,6 +313,10 @@ export class EndgameUIController extends Component {
         const gc = this.getGameController();
         if (gc && typeof gc.restartLevel === 'function') {
             gc.restartLevel(true, true);
+            // Đảm bảo BGM tiếp tục sau restart
+            this.scheduleOnce(() => {
+                if (AudioManager.instance) AudioManager.instance.playBgm();
+            }, 0.5);
         } else {
             console.warn('[EndgameUIController] Không tìm thấy GameController');
         }
