@@ -235,6 +235,7 @@ export class DragControl extends Component {
     @property
     startTimerOnFirstDrag: boolean = true;
 
+    public static globalInputLocked: boolean = false;
     private draggingBlock: DraggableBlock | null = null;
     private draggingNode: Node | null = null;
     private draggingStartCol = 0;
@@ -371,6 +372,7 @@ export class DragControl extends Component {
 
     public setInputLocked(locked: boolean) {
         this.inputLocked = locked;
+        DragControl.globalInputLocked = locked;
 
         if (locked && this.draggingNode) {
             this.endDrag();
@@ -461,7 +463,7 @@ export class DragControl extends Component {
     }
 
     private beginDrag(screenPos: Vec2) {
-        if (this.inputLocked) {
+        if (this.inputLocked || DragControl.globalInputLocked) {
             return;
         }
 
@@ -679,7 +681,7 @@ export class DragControl extends Component {
         const blockCenter = block.node.worldPosition.clone();
         const localCol = (world.x - blockCenter.x) / this.cellStepX + (blockSize.cols - 1) * 0.5;
         const localRow = (world.z - blockCenter.z) / this.cellStepZ + (blockSize.rows - 1) * 0.5;
-        const pickPadding = Math.max(0, this.pickHitPaddingCells);
+        const pickPadding = 0
 
         if (
             localCol < -0.5 - pickPadding ||

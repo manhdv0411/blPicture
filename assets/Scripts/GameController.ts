@@ -650,7 +650,8 @@ export class GameController extends Component {
     }
 
     private createTargetCollectGlow(parent: Node, center: Vec3, layer: number, targetNode: Node): Node {
-        const size = this.getTargetEffectSize(targetNode) * 0.5;
+        // Trả lại nguyên bản kích thước gốc (hoặc tùy bạn chỉnh)
+        const size = this.getTargetEffectSize(targetNode) * 0.5; 
         const glow = new Node('__TargetCollectGlow');
         glow.layer = layer;
         glow.setParent(parent);
@@ -660,6 +661,7 @@ export class GameController extends Component {
         const transform = glow.addComponent(UITransform);
         transform.setContentSize(size, size);
 
+        // Khởi tạo thành phần vẽ (Graphics)
         const graphics = glow.addComponent(Graphics);
         graphics.clear();
         graphics.fillColor = new Color(255, 226, 118, 24);
@@ -672,16 +674,26 @@ export class GameController extends Component {
 
         const opacity = glow.addComponent(UIOpacity);
         opacity.opacity = 0;
-        glow.setScale(new Vec3(0.82, 0.82, 0.82));
+        
+        // 1. CHỈNH TỈ LỆ BAN ĐẦU: Cho xuất hiện từ rất nhỏ (0.2)
+        glow.setScale(new Vec3(0.2, 0.2, 0.2));
 
+        // TỈ LỆ ĐÍCH ĐỂ THU NHỎ: 
+        // Muốn vòng sáng nhỏ bằng một nửa lúc trước? Thay vì dùng 1.0, 1.12, 1.18... 
+        // Chúng ta hạ toàn bộ cụm đó xuống mức nhỏ hơn (ví dụ: tối đa chỉ đạt 0.5 hoặc 0.6)
+        const s1 = 0.50; // Lúc trước là 1.04
+        const s2 = 0.55; // Lúc trước là 1.12
+        const s3 = 0.60; // Lúc trước là 1.18
+
+        // 2. CHỈNH SỬA TWEEN THEO CÁC TỶ LỆ MỚI
         tween(glow)
             .parallel(
-                tween().to(0.16, { scale: new Vec3(1.04, 1.04, 1.04) }, { easing: 'quadOut' }),
+                tween().to(0.16, { scale: new Vec3(s1, s1, s1) }, { easing: 'quadOut' }),
                 tween(opacity).to(0.1, { opacity: 120 }, { easing: 'quadOut' }),
             )
-            .to(0.22, { scale: new Vec3(1.12, 1.12, 1.12) }, { easing: 'quadOut' })
+            .to(0.22, { scale: new Vec3(s2, s2, s2) }, { easing: 'quadOut' })
             .parallel(
-                tween().to(0.16, { scale: new Vec3(1.18, 1.18, 1.18) }, { easing: 'quadIn' }),
+                tween().to(0.16, { scale: new Vec3(s3, s3, s3) }, { easing: 'quadIn' }),
                 tween(opacity).to(0.16, { opacity: 0 }, { easing: 'quadIn' }),
             )
             .call(() => {

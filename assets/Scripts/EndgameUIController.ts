@@ -1,10 +1,11 @@
 import {
-    _decorator, Component, Node, Button, Sprite, SpriteFrame,
+    _decorator, Component, Node, Sprite, SpriteFrame,
     Color, Vec3, tween, Tween, UIOpacity, find,
-    UITransform,
-    Size
+    UITransform, Size, input, Input, EventTouch, EventMouse,
+    Vec2
 } from 'cc';
 import { AudioManager } from './AudioManager';
+import { GameController } from './GameController';
 
 const { ccclass, property } = _decorator;
 
@@ -29,6 +30,9 @@ export class EndgameUIController extends Component {
     @property(Node)
     fireworksRoot: Node | null = null;
 
+    @property(Node)
+    btnReplayTopPanel: Node | null = null;
+
     @property([SpriteFrame])
     fireworkFrames: SpriteFrame[] = [];
 
@@ -48,8 +52,10 @@ export class EndgameUIController extends Component {
     ];
 
     private hasAnimatedWellDone: boolean = false;
+    private static endgameActive: boolean = false;
 
     start() {
+        EndgameUIController.endgameActive = false;
         if (this.wellDoneNode) {
             const op = this.wellDoneNode.getComponent(UIOpacity) || this.wellDoneNode.addComponent(UIOpacity);
             op.opacity = 0;
@@ -62,18 +68,74 @@ export class EndgameUIController extends Component {
     onDestroy() {
         this.btnReplayWin?.off(Node.EventType.TOUCH_END, this.onReplay, this);
         this.btnReplayTimeout?.off(Node.EventType.TOUCH_END, this.onReplay, this);
+        this.releaseInputBlock();
         this.stopFireworks();
     }
 
-    // ====================================================
-    // PUBLIC
-    // ====================================================
+
+    private acquireInputBlock() {
+        if (EndgameUIController.endgameActive) return;
+        EndgameUIController.endgameActive = true;
+
+        this.getGameController()?.stopTimer();
+        this.getGameController()?.dragController?.setInputLocked(true);
+
+        input.on(Input.EventType.TOUCH_START, this.eatTouch, this);
+        input.on(Input.EventType.TOUCH_MOVE, this.eatTouch, this);
+        input.on(Input.EventType.TOUCH_END, this.eatTouch, this);
+        input.on(Input.EventType.TOUCH_CANCEL, this.eatTouch, this);
+        input.on(Input.EventType.MOUSE_DOWN, this.eatMouse, this);
+        input.on(Input.EventType.MOUSE_MOVE, this.eatMouse, this);
+        input.on(Input.EventType.MOUSE_UP, this.eatMouse, this);
+    }
+
+    private releaseInputBlock() {
+        if (!EndgameUIController.endgameActive) return;
+        EndgameUIController.endgameActive = false;
+
+        this.getGameController()?.dragController?.setInputLocked(false);
+
+        input.off(Input.EventType.TOUCH_START, this.eatTouch, this);
+        input.off(Input.EventType.TOUCH_MOVE, this.eatTouch, this);
+        input.off(Input.EventType.TOUCH_END, this.eatTouch, this);
+        input.off(Input.EventType.TOUCH_CANCEL, this.eatTouch, this);
+        input.off(Input.EventType.MOUSE_DOWN, this.eatMouse, this);
+        input.off(Input.EventType.MOUSE_MOVE, this.eatMouse, this);
+        input.off(Input.EventType.MOUSE_UP, this.eatMouse, this);
+    }
+
+    // Kiểm tra touch có trúng node không (dùng UITransform.getBoundingBoxToWorld)
+    private isTouchOnNode(screenPos: Vec2, node: Node | null): boolean {
+        if (!node || !node.isValid || !node.activeInHierarchy) return false;
+        const transform = node.getComponent(UITransform);
+        if (!transform) return false;
+        // Cocos dùng toạ độ UI (gốc dưới trái), screenPos của EventTouch cũng vậy
+        return transform.getBoundingBoxToWorld().contains(screenPos);
+    }
+
+    private eatTouch(event: EventTouch) {
+        event.propagationStopped = true;
+    }
+
+    private eatMouse(event: EventMouse) {
+        event.propagationStopped = true;
+    }
+
+
+    private getGameController(): GameController | null {
+        const canvas = find('Canvas') ?? find('block/Canvas');
+        if (!canvas) return null;
+        return canvas.getComponent(GameController)
+            ?? canvas.getComponentInChildren(GameController);
+    }
+
     public showWinPanel() {
         if (!this.winPanel) return;
         if (AudioManager.instance) AudioManager.instance.playWin();
         this.hasAnimatedWellDone = false;
 
-        this.hasAnimatedWellDone = false;
+        this.acquireInputBlock();
+
         if (this.btnReplayWin) this.btnReplayWin.active = false;
 
         this.timeOutPanel && (this.timeOutPanel.active = false);
@@ -93,14 +155,17 @@ export class EndgameUIController extends Component {
         if (!this.timeOutPanel) return;
         this.stopFireworks();
 
+        this.acquireInputBlock();
+
         this.winPanel && (this.winPanel.active = false);
         this.timeOutPanel.active = true;
+        if (this.timeOutPanel.parent) {
+            this.timeOutPanel.setSiblingIndex(this.timeOutPanel.parent.children.length - 1);
+        }
         this.playPanelIn(this.timeOutPanel);
     }
 
-    // ====================================================
-    // PANEL IN ANIMATION
-    // ====================================================
+
     private playPanelIn(panel: Node, onComplete?: () => void) {
         const dur = Math.max(0.01, this.panelInDuration);
         const from = this.panelInScaleFrom;
@@ -119,9 +184,7 @@ export class EndgameUIController extends Component {
             .start();
     }
 
-    // ====================================================
-    // WELLDONE SPINE
-    // ====================================================
+
     private animateWellDone() {
         if (!this.wellDoneNode || this.hasAnimatedWellDone) return;
         this.hasAnimatedWellDone = true;
@@ -140,11 +203,8 @@ export class EndgameUIController extends Component {
             }
         }
 
-        this.scheduleOnce(() => {
-            wellDoneOpacity.opacity = 255;
-        }, 0.15);
+        this.scheduleOnce(() => { wellDoneOpacity.opacity = 255; }, 0.15);
 
-        // ✅ Hiện nút sau khi appear xong
         this.scheduleOnce(() => {
             if (this.btnReplayWin) {
                 this.btnReplayWin.active = true;
@@ -154,19 +214,13 @@ export class EndgameUIController extends Component {
             }
         }, 1.5);
     }
-    // ====================================================
-    // PHÁO HOA
-    // ====================================================
-    private startFireworks() {
-        console.log('[Firework] fireworksRoot:', this.fireworksRoot?.name);
-        console.log('[Firework] fireworkFrames.length:', this.fireworkFrames.length);
 
+
+    private startFireworks() {
         if (!this.fireworksRoot || this.fireworkFrames.length === 0) {
             console.warn('[Firework] RETURN SỚM — thiếu root hoặc frames');
             return;
         }
-
-        console.log('[Firework] Bắt đầu bắn pháo hoa');
 
         for (let i = 0; i < 8; i++) {
             this.scheduleOnce(() => this.spawnFirework(), i * 0.08);
@@ -193,7 +247,7 @@ export class EndgameUIController extends Component {
         const sp = fw.addComponent(Sprite);
         const op = fw.addComponent(UIOpacity);
         const ut = fw.addComponent(UITransform);
-        ut.setContentSize(40, 40);  // ← kích thước thực tế, chỉnh số này
+        ut.setContentSize(40, 40);
 
         sp.spriteFrame = this.fireworkFrames[Math.floor(Math.random() * this.fireworkFrames.length)];
         sp.color = this.FIREWORK_COLORS[Math.floor(Math.random() * this.FIREWORK_COLORS.length)];
@@ -204,11 +258,10 @@ export class EndgameUIController extends Component {
         const endX = rx + (Math.random() - 0.5) * 200;
 
         fw.setPosition(new Vec3(rx, startY, 0));
-        fw.setScale(new Vec3(1, 1, 1));  // scale giữ = 1, không dùng scale to nhỏ nữa
+        fw.setScale(new Vec3(1, 1, 1));
         op.opacity = 255;
         this.fireworksRoot.addChild(fw);
 
-        // Hiệu ứng bay lên + nổ tung bằng UITransform size
         tween(ut)
             .to(0.6, { contentSize: new Size(60, 60) }, { easing: 'sineOut' })
             .to(0.15, { contentSize: new Size(90, 90) }, { easing: 'sineOut' })
@@ -236,15 +289,14 @@ export class EndgameUIController extends Component {
         }
     }
 
-    // ====================================================
-    // REPLAY
-    // ====================================================
+
     private bindButtons() {
         this.btnReplayWin?.on(Node.EventType.TOUCH_END, this.onReplay, this);
         this.btnReplayTimeout?.on(Node.EventType.TOUCH_END, this.onReplay, this);
     }
 
     private onReplay() {
+        this.releaseInputBlock();
         this.stopFireworks();
         this.hasAnimatedWellDone = false;
 
@@ -258,8 +310,7 @@ export class EndgameUIController extends Component {
         if (this.winPanel) this.winPanel.active = false;
         if (this.timeOutPanel) this.timeOutPanel.active = false;
 
-        const canvas = find('Canvas') ?? find('block/Canvas');
-        const gc = canvas?.getComponent('GameController') as any;
+        const gc = this.getGameController();
         if (gc && typeof gc.restartLevel === 'function') {
             gc.restartLevel(true, true);
         } else {

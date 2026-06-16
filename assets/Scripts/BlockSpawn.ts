@@ -607,7 +607,7 @@ export class BlockSpawn extends Component {
                 colorGroup: 'orange',
                 prefab: this.square1Prefab,
                 col: 4,
-                row: 6,
+                row: 7,
                 targetCol: 1,
                 targetRow: 1,
                 shape: this.rectShape(1, 1),
@@ -1888,7 +1888,7 @@ export class BlockSpawn extends Component {
         if (def.colorGroup === 'purple') {
             return this.purpleImageScaleMultiplier;
         }
-        if (def.id === 'orange') {
+        if (def.colorGroup === 'orange') {
             return this.orangeImageScaleMultiplier;
         }
 
@@ -1899,8 +1899,9 @@ export class BlockSpawn extends Component {
         if (def.id === 'l1_top') {
             return this.blueL1ImageScaleMultiplier;
         }
+        return this.blueImageScaleMultiplier;
 
-        return this.imageScaleMultiplier;
+        // return this.imageScaleMultiplier;
     }
 
     private shouldPreserveImageAspectRatio(def: BlockDef): boolean {
